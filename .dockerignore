@@ -1,1 +1,4 @@
 *.md
+.gitignore
+.git
+.idea

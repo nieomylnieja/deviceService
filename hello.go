@@ -15,10 +15,10 @@ import (
 )
 
 type Device struct {
-	ID primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name string `json:"name,omitempty" bson:"name,omitempty"`
-	Value float32 `json:"value,omitempty" bson:"value,omitempty"`
-	Interval float32 `json:"interval,omitempty" bson:"interval,omitempty"`
+	ID primitive.ObjectID 	`json:"_id,omitempty" bson:"_id,omitempty"`
+	Name string 	`json:"name,omitempty" bson:"name,omitempty"`
+	Value float32	 `json:"value,omitempty" bson:"value,omitempty"`
+	Interval float32 	`json:"interval,omitempty" bson:"interval,omitempty"`
 }
 
 var client *mongo.Client
@@ -38,7 +38,8 @@ func CreateDeviceEndpoint(response http.ResponseWriter,
 func main() {
 	fmt.Println("Starting application...")
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	var err error
+	client, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		fmt.Println("Couldn't connect!")

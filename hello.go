@@ -15,23 +15,24 @@ import (
 )
 
 type Device struct {
-	ID primitive.ObjectID 	`json:"_id,omitempty" bson:"_id,omitempty"`
-	Name string 	`json:"name,omitempty" bson:"name,omitempty"`
-	Value float32	 `json:"value,omitempty" bson:"value,omitempty"`
-	Interval float32 	`json:"interval,omitempty" bson:"interval,omitempty"`
+	ID       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name     string             `json:"name,omitempty" bson:"name,omitempty"`
+	Value    float32            `json:"value,omitempty" bson:"value,omitempty"`
+	Interval float32            `json:"interval,omitempty" bson:"interval,omitempty"`
 }
 
 var client *mongo.Client
 
-func CreateDeviceEndpoint(response http.ResponseWriter,
-						request *http.Request) {
+func CreateDeviceEndpoint(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 	var device Device
 	_ = json.NewDecoder(request.Body).Decode(&device)
 	collection := client.Database("deviceservice").Collection("device")
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	result, err := collection.InsertOne(ctx, device)
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	json.NewEncoder(response).Encode(result)
 }
 

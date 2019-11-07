@@ -1,52 +1,158 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"log"
 	"net/http"
+	"os/exec"
+	"regexp"
 	"time"
 )
 
-type Device struct {
-	ID       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name     string             `json:"name,omitempty" bson:"name,omitempty"`
-	Value    float32            `json:"value,omitempty" bson:"value,omitempty"`
-	Interval float32            `json:"interval,omitempty" bson:"interval,omitempty"`
+type DeviceInfo struct {
+	ID    int
+	Value string
+	When  time.Time
 }
 
-var client *mongo.Client
+type DeviceReading struct {
+	Value string
+	When  time.Time
+}
 
-func CreateDeviceEndpoint(response http.ResponseWriter, request *http.Request) {
-	response.Header().Add("content-type", "application/json")
-	var device Device
-	_ = json.NewDecoder(request.Body).Decode(&device)
-	collection := client.Database("deviceservice").Collection("device")
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	result, err := collection.InsertOne(ctx, device)
-	if err != nil {
-		log.Fatal(err)
+type Device struct {
+	ID       int
+	Name     string
+	Value    string
+	Interval float64
+	stop     chan bool
+}
+
+var devices map[int]Device
+var devicesReadings map[int][]DeviceReading
+var devicesChan chan DeviceInfo
+
+func addDevice(d *Device) {
+	devices[d.ID] = *d
+}
+
+func (d *Device) updateDeviceInterval(interval float64) {
+	d.Interval = interval
+}
+
+func (d *Device) updateDeviceValue(value string) {
+	d.Value = value
+}
+
+func (d *Device) deviceTicker() {
+	ticker := time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
+
+	for {
+		select {
+		case <-ticker.C:
+			ticker.Stop()
+			ticker = time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
+			d.updateDeviceValue(valueService(d.ID))
+			devicesChan <- DeviceInfo{d.ID, d.Value, time.Now()}
+		case <-d.stop:
+			ticker.Stop()
+			fmt.Printf("...%s ID:%d stopped!\n", d.Name, d.ID)
+			return
+		}
 	}
-	json.NewEncoder(response).Encode(result)
+}
+
+func stopDevice(d *Device) {
+	fmt.Printf("Stopping %s ID:%d...\n", d.Name, d.ID)
+	d.stop <- true
+	//delete(devices, d.ID)
+}
+
+func createDevice(id int, name string, value string, interval float64) error {
+	var err error
+	for _, v := range devices {
+		if v.ID == id {
+			err = errors.New("the device already exists")
+			return err
+		}
+	}
+	d := Device{id, name, value, interval, make(chan bool)}
+	d.startDevice()
+	return nil
+}
+
+func (d *Device) startDevice() () {
+	addDevice(d)
+	go d.deviceTicker()
+}
+
+func removeDevice(d *Device) {
+	delete(devices, d.ID)
+	stopDevice(d)
+	time.Sleep(50 * time.Millisecond)
+	fmt.Printf("%s ID:%d removed.\n", d.Name, d.ID)
+}
+
+func tickerService() {
+	var temp DeviceInfo
+	var devRead DeviceReading
+	for {
+		select {
+		case temp = <-devicesChan:
+			devRead = DeviceReading{temp.Value, temp.When}
+			devicesReadings[temp.ID] = append(devicesReadings[temp.ID], devRead)
+		default:
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+}
+
+func publishReadings(w http.ResponseWriter) {
+	for device, readings := range devicesReadings {
+		fmt.Fprintf(w, "Device ID:%d\n", device)
+		for _, r := range readings {
+			fmt.Fprintf(w, "Nanoseconds: %d -- with value %s\n", r.When.Nanosecond(), r.Value)
+		}
+	}
+}
+
+// reads through the temperatures provided by lm-sensors
+// giving every device a different reading
+// on my laptop it provides 3 readings thus 3 devices
+func valueService(n int) string {
+	out, _ := exec.Command("sensors").Output()
+	regexResult := regexp.MustCompile(".{4}.C\\s").FindAll(out, 6)
+	result := string(regexResult[n])
+	return result
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "Here you will be shown the readings:\n")
+	publishReadings(w)
 }
 
 func main() {
-	fmt.Println("Starting application...")
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	devices = make(map[int]Device)
+	devicesChan = make(chan DeviceInfo, 5)
+	devicesReadings = make(map[int][]DeviceReading)
+
+	go tickerService()
+
 	var err error
-	client, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
-	err = client.Ping(ctx, readpref.Primary())
-	if err != nil {
-		fmt.Println("Couldn't connect!")
+	for i := 0; i < 3; i++ {
+		err = createDevice(i, "Thermostat", "NULL", 1000)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 	}
-	router := mux.NewRouter()
-	router.HandleFunc("/device", CreateDeviceEndpoint).Methods("POST")
-	fmt.Println("Serving...")
-	log.Fatal(http.ListenAndServe("localhost:8000", router))
+
+	time.Sleep(10 * time.Second)
+
+	for _, dev := range devices {
+		removeDevice(&dev)
+	}
+
+	http.HandleFunc("/", indexHandler)
+	http.ListenAndServe(":8000", nil)
 }

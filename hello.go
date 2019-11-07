@@ -25,15 +25,19 @@ type Device struct {
 	Name     string
 	Value    string
 	Interval float64
-	stop     chan bool
+	stopChan     chan bool
 }
 
 var devices map[int]Device
 var devicesReadings map[int][]DeviceReading
 var devicesChan chan DeviceInfo
 
-func addDevice(d *Device) {
+func (d *Device) addDevice() {
 	devices[d.ID] = *d
+}
+
+func (d *Device) updateDeviceName(name string) {
+	d.Name = name
 }
 
 func (d *Device) updateDeviceInterval(interval float64) {
@@ -54,7 +58,7 @@ func (d *Device) deviceTicker() {
 			ticker = time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
 			d.updateDeviceValue(valueService(d.ID))
 			devicesChan <- DeviceInfo{d.ID, d.Value, time.Now()}
-		case <-d.stop:
+		case <-d.stopChan:
 			ticker.Stop()
 			fmt.Printf("...%s ID:%d stopped!\n", d.Name, d.ID)
 			return
@@ -62,13 +66,38 @@ func (d *Device) deviceTicker() {
 	}
 }
 
-func stopDevice(d *Device) {
+func (d *Device) stopDevice() {
 	fmt.Printf("Stopping %s ID:%d...\n", d.Name, d.ID)
-	d.stop <- true
+	d.stopChan <- true
 	//delete(devices, d.ID)
 }
 
-func createDevice(id int, name string, value string, interval float64) error {
+func (d Device) createDevice(id int, name string, value string, interval float64) error {
+	err := deviceAlreadyExistsCheck(id)
+	if err != nil { return err }
+	d = Device{id, name, value, interval, make(chan bool)}
+	d.startDevice()
+	return nil
+}
+
+func (d *Device) startDevice() () {
+	d.addDevice()
+	go d.deviceTicker()
+}
+
+func (d *Device) removeDevice() {
+	delete(devices, d.ID)
+	d.stopDevice()
+	time.Sleep(50 * time.Millisecond)
+	fmt.Printf("%s ID:%d removed.\n", d.Name, d.ID)
+}
+
+func getDeviceByID(id int) *Device {
+	dev := devices[id]
+	return &dev
+}
+
+func deviceAlreadyExistsCheck(id int) error {
 	var err error
 	for _, v := range devices {
 		if v.ID == id {
@@ -76,28 +105,16 @@ func createDevice(id int, name string, value string, interval float64) error {
 			return err
 		}
 	}
-	d := Device{id, name, value, interval, make(chan bool)}
-	d.startDevice()
 	return nil
 }
 
-func (d *Device) startDevice() () {
-	addDevice(d)
-	go d.deviceTicker()
-}
-
-func removeDevice(d *Device) {
-	delete(devices, d.ID)
-	stopDevice(d)
-	time.Sleep(50 * time.Millisecond)
-	fmt.Printf("%s ID:%d removed.\n", d.Name, d.ID)
-}
-
-func tickerService() {
+func (s *Service) tickerService() {
 	var temp DeviceInfo
 	var devRead DeviceReading
 	for {
 		select {
+		case <-s.stopChan:
+			return
 		case temp = <-devicesChan:
 			devRead = DeviceReading{temp.Value, temp.When}
 			devicesReadings[temp.ID] = append(devicesReadings[temp.ID], devRead)
@@ -131,26 +148,40 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	publishReadings(w)
 }
 
+type Service struct {
+	stopChan chan bool
+}
+
+func (s *Service) run() {
+	go s.tickerService()
+}
+
+func (s *Service) stop() {
+	s.stopChan <- true
+}
+
 func main() {
+	s := Service{make(chan bool)}
 	devices = make(map[int]Device)
 	devicesChan = make(chan DeviceInfo, 5)
 	devicesReadings = make(map[int][]DeviceReading)
 
-	go tickerService()
+	s.run()
 
 	var err error
+	var dev Device
 	for i := 0; i < 3; i++ {
-		err = createDevice(i, "Thermostat", "NULL", 1000)
+		err = dev.createDevice(i, "Thermostat", "NULL", 1000)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	for _, dev := range devices {
-		removeDevice(&dev)
+		dev.removeDevice()
 	}
 
 	http.HandleFunc("/", indexHandler)

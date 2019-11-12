@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"os/exec"
 	"regexp"
 	"time"
@@ -30,9 +29,6 @@ type Device struct {
 	stopChan chan bool
 }
 
-func (d *Device) addDevice(s *Service) {
-	s.devices[d.ID] = *d
-}
 
 func (d *Device) deviceTicker(s *Service) {
 	ticker := time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
@@ -52,25 +48,17 @@ func (d *Device) deviceTicker(s *Service) {
 	}
 }
 
-func (d *Device) stopDevice() {
-	fmt.Printf("Stopping %s ID:%d...\n", d.Name, d.ID)
-	d.stopChan <- true
-}
-
-func (d *Device) startDevice(s *Service) () {
-	go d.deviceTicker(s)
-}
-
 // SERVICE METHODS AND STRUCTS
 
 type Service struct {
 	devices         map[int]Device
+	devicesReadings DataAccessObject
 	devicesChan     chan DeviceInfo
 	stopChan        chan bool
 }
 
 func (s *Service) run() {
-	devicesReadings = make(map[int][]DeviceReading)
+	s.devicesReadings = DataAccessObject{make(map[int][]DeviceReading)}
 	s.devicesChan = make(chan DeviceInfo)
 	s.stopChan = make(chan bool)
 	s.devices = make(map[int]Device)
@@ -79,7 +67,7 @@ func (s *Service) run() {
 
 func (s *Service) stop() {
 	for _, dev := range s.devices {
-		s.removeDevice(&dev)
+		s.stopDevice(&dev)
 	}
 	s.stopChan <- true
 }
@@ -93,22 +81,20 @@ func (s *Service) tickerService() {
 			return
 		case temp = <-s.devicesChan:
 			devRead = DeviceReading{temp.Value, temp.When}
-			devicesReadings[temp.ID] = append(devicesReadings[temp.ID], devRead)
+			s.devicesReadings.data[temp.ID] = append(s.devicesReadings.data[temp.ID], devRead)
 		default:
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
 }
 
-func (s *Service) createDevice(id int, name string, value string, interval float64) error {
+func (s *Service) createDevice(id int, name string, value string, interval float64) (*Device, error) {
 	if s.deviceAlreadyExists(id) {
 		err := errors.New("The device with given ID already exists!")
-		return err
+		return nil, err
 	}
 	d := Device{id, name, value, interval, make(chan bool)}
-	d.addDevice(s)
-	d.startDevice(s)
-	return nil
+	return &d, nil
 }
 
 func (s *Service) updateDeviceName(id int, name string) error {
@@ -133,9 +119,23 @@ func (s *Service) updateDeviceValue(d *Device, value string) {
 	d.Value = value
 }
 
+func (s *Service) startDevice(d *Device) () {
+	s.addDevice(d)
+	go d.deviceTicker(s)
+}
+
+func (s *Service) addDevice(d *Device) {
+	s.devices[d.ID] = *d
+}
+
+func (s *Service) stopDevice(d *Device)  {
+	fmt.Printf("Stopping %s ID:%d...\n", d.Name, d.ID)
+	d.stopChan <- true
+	s.removeDevice(d)
+}
+
 func (s *Service) removeDevice(d *Device) {
 	delete(s.devices, d.ID)
-	d.stopDevice()
 	time.Sleep(50 * time.Millisecond)
 	fmt.Printf("%s ID:%d removed.\n", d.Name, d.ID)
 }
@@ -166,9 +166,23 @@ func (s *Service) deviceAlreadyExists(id int) bool {
 	return false
 }
 
+func (s *Service) pushReadings() []string {
+	var fwdReadings []string
+	for device, readings := range s.devicesReadings.data {
+		fwdReadings = append(fwdReadings, fmt.Sprintf("Device ID:%d\n", device))
+		for _, r := range readings {
+			fwdReadings = append(fwdReadings,
+				fmt.Sprintf("Nanoseconds: %d -- with value %s\n", r.When.Nanosecond(), r.Value))
+		}
+	}
+	return fwdReadings
+}
+
 // PERSISTENCE LAYER
 
-var devicesReadings map[int][]DeviceReading
+type DataAccessObject struct {
+	data map[int][]DeviceReading
+}
 
 // reads through the temperatures provided by lm-sensors
 // giving every device a different reading
@@ -180,19 +194,7 @@ func valueService(n int) string {
 	return result
 }
 
-func pushReadings() []string {
-	var fwdReadings []string
-	for device, readings := range devicesReadings {
-		fwdReadings = append(fwdReadings, fmt.Sprintf("Device ID:%d\n", device))
-		for _, r := range readings {
-			fwdReadings = append(fwdReadings,
-				fmt.Sprintf("Nanoseconds: %d -- with value %s\n", r.When.Nanosecond(), r.Value))
-		}
-	}
-	return fwdReadings
-}
-
-func serviceTest() {
+func serviceTest(s *Service) {
 	var readings []string
 	finished := make(chan bool)
 	ticker := time.NewTicker(10 * time.Second)
@@ -204,7 +206,7 @@ func serviceTest() {
 			default:
 				time.Sleep(5 * time.Second)
 			case <-ticker.C:
-				readings = pushReadings()
+				readings = s.pushReadings()
 				for _, r := range readings {
 					fmt.Print(r)
 				}
@@ -212,17 +214,18 @@ func serviceTest() {
 			}
 		}
 	}()
-	time.Sleep(100 * time.Second)
+	time.Sleep(30 * time.Second)
 	ticker.Stop()
 	finished <- true
+	s.stop()
 	fmt.Println("Service stopped.")
 }
 
 // HTTP HANDLERS
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Here you will be shown the readings:\n")
-}
+//func indexHandler(w http.ResponseWriter, r *http.Request) {
+//	fmt.Fprint(w, "Here you will be shown the readings:\n")
+//}
 
 // MAIN
 
@@ -232,21 +235,20 @@ func main() {
 	s.run()
 
 	var err error
+	var dev *Device
 	for i := 0; i < 3; i++ {
-		err = s.createDevice(i, "Thermostat", "NULL", 1000)
+		dev, err = s.createDevice(i, "Thermostat", "NULL", 1000)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
+		s.startDevice(dev)
 	}
 
 	s.getDevicesList()
 
-	serviceTest()
+	serviceTest(&s)
 
-	time.Sleep(120 * time.Second)
-	s.stop()
-
-	http.HandleFunc("/", indexHandler)
-	http.ListenAndServe(":8000", nil)
+	//http.HandleFunc("/", indexHandler)
+	//http.ListenAndServe(":8000", nil)
 }

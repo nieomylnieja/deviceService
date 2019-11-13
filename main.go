@@ -51,7 +51,6 @@ func serviceTest(s *Service) {
 	fmt.Fprint(w, "Here you will be shown the readings:\n")
 }*/
 
-
 func main() {
 	dao := &DataAccessObject{make(map[int][]DeviceReading)}
 	s := Service{}

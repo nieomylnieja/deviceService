@@ -19,7 +19,7 @@ func Test_GivenTickerServiceIsStarted_WhenNewMeasurementComes_ThenReadingIsPasse
 		Interval: "1000",
 	}
 	dev, _ := s.createDevice(input)
-	m := func(n int) string { return "10C"}
+	m := func(n int) string { return "10C" }
 	_ = s.startDevice(dev, m)
 
 	time.Sleep(1 * time.Second)

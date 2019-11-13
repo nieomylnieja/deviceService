@@ -26,7 +26,7 @@ type Device struct {
 
 type measurement func(int) string
 
-func (d *Device) deviceTicker(s *Service, getMeasurement measurement) {
+func (d *Device) deviceTicker(s *DeviceService, getMeasurement measurement) {
 	ticker := time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
 
 	for {

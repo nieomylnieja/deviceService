@@ -14,38 +14,40 @@ type RawInput struct {
 	Interval string `json:"interval" validate:"required,gt=0,numeric"`
 }
 
-type ParsedInput struct {
+type DevicePayload struct {
 	Id       int
 	Name     string
 	Interval int
 }
 
-type Service struct {
-	devices         map[int]Device
-	DevicesReadings *DataAccessObject
+type DeviceDao interface {
+	AddDevice(device *DevicePayload) (*Device, error)
+}
+
+type DeviceService struct {
+	//	Dao             DeviceDao
+	dao             *Dao
 	DevicesSaveChan chan DeviceInfo
 	stopChan        chan bool
 }
 
-func (s *Service) init(dao *DataAccessObject) {
-	s.DevicesReadings = dao
+func (s *DeviceService) init() {
 	s.DevicesSaveChan = make(chan DeviceInfo)
 	s.stopChan = make(chan bool)
-	s.devices = make(map[int]Device)
 }
 
-func (s *Service) run() {
+func (s *DeviceService) run() {
 	go s.tickerService()
 }
 
-func (s *Service) stop() {
-	for _, dev := range s.devices {
+func (s *DeviceService) stop() {
+	for _, dev := range s.dao.Devices {
 		s.stopDevice(&dev)
 	}
 	s.stopChan <- true
 }
 
-func (s *Service) tickerService() {
+func (s *DeviceService) tickerService() {
 	var deviceInfo DeviceInfo
 	var deviceReading DeviceReading
 	for {
@@ -55,15 +57,15 @@ func (s *Service) tickerService() {
 		case deviceInfo = <-s.DevicesSaveChan:
 			deviceReading = DeviceReading{deviceInfo.Value,
 				deviceInfo.When}
-			s.DevicesReadings.data[deviceInfo.Id] =
-				append(s.DevicesReadings.data[deviceInfo.Id], deviceReading)
+			s.dao.Readings[deviceInfo.Id] =
+				append(s.dao.Readings[deviceInfo.Id], deviceReading)
 		default:
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
 }
 
-func (s *Service) parseDeviceInitInput(input *RawInput) (*ParsedInput, error) {
+func (s *DeviceService) parseDeviceInitInput(input *RawInput) (*DevicePayload, error) {
 	validate := validator.New()
 	validationErrors := validate.Struct(input)
 	if validationErrors != nil {
@@ -81,22 +83,36 @@ func (s *Service) parseDeviceInitInput(input *RawInput) (*ParsedInput, error) {
 	if err != nil {
 		return nil, err
 	}
-	parsedInput := &ParsedInput{id, input.Name, interval}
+	parsedInput := &DevicePayload{id, input.Name, interval}
 	return parsedInput, nil
 }
 
-func (s *Service) createDevice(input *RawInput) (*Device, error) {
-	parsedInput, err := s.parseDeviceInitInput(input)
+func (s *DeviceService) CreateDevicePayload(input *RawInput) (*DevicePayload, error) {
+	devicePayload, err := s.parseDeviceInitInput(input)
 	if err != nil {
 		return nil, err
 	}
-	d := &Device{parsedInput.Id, parsedInput.Name, "",
-		parsedInput.Interval, make(chan bool)}
+	return devicePayload, nil
+}
+
+func (s *DeviceService) startDevice(device *Device, getMeasurement measurement) {
+	go device.deviceTicker(s, getMeasurement)
+
+}
+
+func (s *DeviceService) AddDevice(device *DevicePayload) (*Device, error) {
+	d := &Device{device.Id, device.Name, "",
+		device.Interval, make(chan bool)}
+	if s.deviceAlreadyExists(d.Id) {
+		err := errors.New("The device with given ID already exists!")
+		return nil, err
+	}
+	s.dao.Devices[d.Id] = *d
 	return d, nil
 }
 
-func (s *Service) updateDeviceName(id int, name string) error {
-	dev, err := s.getDeviceByID(id)
+func (s *DeviceService) UpdateDeviceName(id int, name string) error {
+	dev, err := s.GetDeviceByID(id)
 	if err != nil {
 		return err
 	}
@@ -104,8 +120,8 @@ func (s *Service) updateDeviceName(id int, name string) error {
 	return nil
 }
 
-func (s *Service) updateDeviceInterval(id int, interval int) error {
-	dev, err := s.getDeviceByID(id)
+func (s *DeviceService) UpdateDeviceInterval(id int, interval int) error {
+	dev, err := s.GetDeviceByID(id)
 	if err != nil {
 		return err
 	}
@@ -113,59 +129,41 @@ func (s *Service) updateDeviceInterval(id int, interval int) error {
 	return nil
 }
 
-func (s *Service) updateDeviceValue(d *Device, value string) {
+func (s *DeviceService) updateDeviceValue(d *Device, value string) {
 	d.Value = value
 }
 
-func (s *Service) startDevice(d *Device, getMeasurement measurement) error {
-	err := s.addDevice(d)
-	if err != nil {
-		return err
-	}
-	go d.deviceTicker(s, getMeasurement)
-	return nil
-}
-
-func (s *Service) addDevice(d *Device) error {
-	if s.deviceAlreadyExists(d.Id) {
-		err := errors.New("The device with given ID already exists!")
-		return err
-	}
-	s.devices[d.Id] = *d
-	return nil
-}
-
-func (s *Service) stopDevice(d *Device) {
+func (s *DeviceService) stopDevice(d *Device) {
 	fmt.Printf("Stopping %s ID:%d...\n", d.Name, d.Id)
 	d.stopChan <- true
-	s.removeDevice(d)
 }
 
-func (s *Service) removeDevice(d *Device) {
-	delete(s.devices, d.Id)
+func (s *DeviceService) RemoveDevice(d *Device) {
+	s.stopDevice(d)
+	delete(s.dao.Devices, d.Id)
 	time.Sleep(50 * time.Millisecond)
 	fmt.Printf("%s ID:%d removed.\n", d.Name, d.Id)
 }
 
-func (s *Service) getDevicesList() {
-	for _, dev := range s.devices {
+func (s *DeviceService) GetDevicesList() {
+	for _, dev := range s.dao.Devices {
 		fmt.Printf("%s -- ID:%d and interval=%d mls\n",
 			dev.Name, dev.Id, dev.Interval)
 	}
 }
 
-func (s *Service) getDeviceByID(id int) (*Device, error) {
+func (s *DeviceService) GetDeviceByID(id int) (*Device, error) {
 	var err error
 	if s.deviceAlreadyExists(id) {
-		dev := s.devices[id]
+		dev := s.dao.Devices[id]
 		return &dev, nil
 	}
 	err = errors.New("The device with given ID doesn't exist!")
 	return nil, err
 }
 
-func (s *Service) deviceAlreadyExists(id int) bool {
-	for _, dev := range s.devices {
+func (s *DeviceService) deviceAlreadyExists(id int) bool {
+	for _, dev := range s.dao.Devices {
 		if dev.Id == id {
 			return true
 		}
@@ -173,9 +171,9 @@ func (s *Service) deviceAlreadyExists(id int) bool {
 	return false
 }
 
-func (s *Service) getReadings() []string {
+func (s *DeviceService) GetReadings() []string {
 	var fwdReadings []string
-	for device, readings := range s.DevicesReadings.data {
+	for device, readings := range s.dao.Readings {
 		fwdReadings = append(fwdReadings, fmt.Sprintf("Device ID:%d\n", device))
 		for _, r := range readings {
 			fwdReadings = append(fwdReadings,

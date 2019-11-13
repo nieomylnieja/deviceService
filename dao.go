@@ -1,5 +1,6 @@
 package main
 
-type DataAccessObject struct {
-	data map[int][]DeviceReading
+type Dao struct {
+	Readings map[int][]DeviceReading
+	Devices  map[int]Device
 }

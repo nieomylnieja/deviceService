@@ -18,7 +18,7 @@ func valueService(n int) string {
 	return result
 }
 
-func serviceTest(s *Service) {
+func serviceTest(s *DeviceService) {
 	var readings []string
 	finished := make(chan bool)
 	ticker := time.NewTicker(10 * time.Second)
@@ -30,7 +30,7 @@ func serviceTest(s *Service) {
 			default:
 				time.Sleep(5 * time.Second)
 			case <-ticker.C:
-				readings = s.getReadings()
+				readings = s.GetReadings()
 				for _, r := range readings {
 					fmt.Print(r)
 				}
@@ -42,7 +42,7 @@ func serviceTest(s *Service) {
 	ticker.Stop()
 	finished <- true
 	s.stop()
-	fmt.Println("Service stopped.")
+	fmt.Println("DeviceService stopped.")
 }
 
 // HTTP HANDLERS
@@ -52,14 +52,18 @@ func serviceTest(s *Service) {
 }*/
 
 func main() {
-	dao := &DataAccessObject{make(map[int][]DeviceReading)}
-	s := Service{}
+	dao := &Dao{
+		Readings: make(map[int][]DeviceReading),
+		Devices:  make(map[int]Device),
+	}
+	s := DeviceService{dao: dao}
 
-	s.init(dao)
+	s.init()
 	s.run()
 
 	var err error
-	var dev *Device
+	var devicePayload *DevicePayload
+	var device *Device
 	var input *RawInput
 	for i := 0; i < 3; i++ {
 		input = &RawInput{
@@ -67,19 +71,20 @@ func main() {
 			Name:     "Thermostat",
 			Interval: "1000",
 		}
-		dev, err = s.createDevice(input)
+		devicePayload, err = s.CreateDevicePayload(input)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		err = s.startDevice(dev, valueService)
+		device, err = s.AddDevice(devicePayload)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
+		s.startDevice(device, valueService)
 	}
 
-	s.getDevicesList()
+	s.GetDevicesList()
 
 	serviceTest(&s)
 

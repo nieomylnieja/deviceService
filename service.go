@@ -3,9 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"strconv"
 	"time"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type RawInput struct {
@@ -171,4 +172,8 @@ func (s *Service) GetReadings() []string {
 		}
 	}
 	return fwdReadings
+}
+
+func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
+	return s.Dao.AddDevice(payload)
 }

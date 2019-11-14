@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_GivenTickerServiceIsStarted_WhenNewMeasurementComes_ThenReadingIsPassedToSaveChannel(t *testing.T) {
+	t.Skip()
 	s := Service{Dao: &Dao{Readings: make(map[int][]DeviceReading), Devices: make(map[int]Device)}}
 	s.run()
 
@@ -30,28 +32,46 @@ func Test_GivenTickerServiceIsStarted_WhenNewMeasurementComes_ThenReadingIsPasse
 	assert.Equal(t, expected, result)
 }
 
-type mockDao struct {}
+type mockDao struct {
+	returnValue *Device
+	returnErr   error
+	calledTimes int
+}
 
 func (m *mockDao) AddDevice(device *DevicePayload) (*Device, error) {
-	dev := &Device{
-		Id:       device.Id,
-		Name:     device.Name,
-		Value:    "",
-		Interval: device.Interval,
-		stopChan: nil,
-	}
-	return dev, nil
+	m.calledTimes++
+	return m.returnValue, m.returnErr
 }
 
 func Test_CorrectDevice_ServiceSavesNewDevice(t *testing.T) {
-	out := Service{Dao: &mockDao{}}
-
 	device := &DevicePayload{
 		Id:       0,
 		Name:     "Thermostat",
 		Interval: 1000,
 	}
-	_, err := out.Dao.AddDevice(device)
+	dao := &mockDao{
+		returnValue: &Device{
+			Id:       device.Id,
+			Name:     device.Name,
+			Value:    "",
+			Interval: device.Interval,
+			stopChan: nil,
+		},
+	}
+	out := Service{Dao: dao}
+
+	result, err := out.AddDevice(device)
 
 	assert.NoError(t, err)
+	assert.Equal(t, 1, dao.calledTimes)
+	assert.NotNil(t, result)
+}
+
+func Test_CorrectDeviceAndDaoFails_ServiceFails(t *testing.T) {
+	dao := &mockDao{returnErr: fmt.Errorf("test error")}
+	out := Service{Dao: dao}
+
+	_, err := out.AddDevice(&DevicePayload{})
+
+	assert.Error(t, err)
 }

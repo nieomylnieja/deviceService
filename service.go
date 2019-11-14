@@ -16,9 +16,9 @@ type RawInput struct {
 }
 
 type DevicePayload struct {
-	Id       int
-	Name     string
-	Interval int
+	Id       int    `json:"id" validate:"gte=0,numeric"`
+	Name     string `json:"name" validate:"required,min=2,max=30"`
+	Interval int    `json:"interval" validate:"required,gt=0,numeric"`
 }
 
 type DeviceDao interface {
@@ -174,6 +174,23 @@ func (s *Service) GetReadings() []string {
 	return fwdReadings
 }
 
+func (s *Service) validate(payload *DevicePayload) error {
+	validate := validator.New()
+	validationErrors := validate.Struct(payload)
+	if validationErrors != nil {
+		for _, err := range validationErrors.(validator.ValidationErrors) {
+			fmt.Println(err)
+		}
+		errForwarded := errors.New("input validation failed, device not created")
+		return errForwarded
+	}
+	return nil
+}
+
 func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
+	err := s.validate(payload)
+	if err != nil {
+		return nil, err
+	}
 	return s.Dao.AddDevice(payload)
 }

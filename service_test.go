@@ -75,3 +75,10 @@ func Test_CorrectDeviceAndDaoFails_ServiceFails(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+func Test_GivenIntervalValueBelowZero_ServiceFails(t *testing.T) {
+	out := Service{Dao: &mockDao{}}
+
+	_, err := out.AddDevice(&DevicePayload{Interval: -1})
+	assert.Error(t, err)
+}

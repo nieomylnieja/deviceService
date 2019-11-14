@@ -11,10 +11,10 @@ import (
 // reads through the temperatures provided by lm-sensors
 // giving every device a different reading
 // on my laptop it provides 3 readings thus 3 devices
-func valueService(n int) string {
+func valueService(n int) float64 {
 	out, _ := exec.Command("sensors").Output()
 	regexResult := regexp.MustCompile(".{4}.C\\s").FindAll(out, 6)
-	result := string(regexResult[n])
+	result, _ := strconv.ParseFloat(string(regexResult[n]), 64)
 	return result
 }
 
@@ -62,7 +62,7 @@ func main() {
 
 	var err error
 	var devicePayload *DevicePayload
-	var device *Device
+	var deviceId int
 	var input *RawInput
 	for i := 0; i < 3; i++ {
 		input = &RawInput{
@@ -75,12 +75,12 @@ func main() {
 			fmt.Println(err)
 			continue
 		}
-		device, err = s.Dao.AddDevice(devicePayload)
+		deviceId, err = s.Dao.AddDevice(devicePayload)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		s.StartDevice(device, valueService)
+		s.StartDevice(deviceId, valueService)
 	}
 
 	s.GetDevicesList()

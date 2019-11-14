@@ -16,18 +16,19 @@ type RawInput struct {
 }
 
 type DevicePayload struct {
-	Id       int    `json:"id" validate:"gte=0,numeric"`
-	Name     string `json:"name" validate:"required,min=2,max=30"`
-	Interval int    `json:"interval" validate:"required,gt=0,numeric"`
+	Name     string  `json:"name" validate:"required,min=2,max=30"`
+	Interval int     `json:"interval" validate:"gt=0,numeric"`
+	Value    float64 `json:"value" validate:"numeric"`
 }
 
 type DeviceDao interface {
-	AddDevice(device *DevicePayload) (*Device, error)
+	AddDevice(device *DevicePayload) (int, error)
 }
 
 type Service struct {
 	Dao             DeviceDao
 	dao             *Dao
+	tempDevice      *Device
 	DevicesSaveChan chan DeviceInfo
 	stopChan        chan bool
 }
@@ -77,15 +78,15 @@ func (s *Service) parseDeviceInitInput(input *RawInput) (*DevicePayload, error) 
 		errForwarded := errors.New("input validation failed, device not created")
 		return nil, errForwarded
 	}
-	id, err := strconv.Atoi(input.Id)
-	if err != nil {
-		return nil, err
-	}
 	interval, err := strconv.Atoi(input.Interval)
 	if err != nil {
 		return nil, err
 	}
-	parsedInput := &DevicePayload{id, input.Name, interval}
+	parsedInput := &DevicePayload{
+		Name:     "",
+		Interval: interval,
+		Value:    0,
+	}
 	return parsedInput, nil
 }
 
@@ -97,7 +98,8 @@ func (s *Service) CreateDevicePayload(input *RawInput) (*DevicePayload, error) {
 	return devicePayload, nil
 }
 
-func (s *Service) StartDevice(device *Device, getMeasurement measurement) {
+func (s *Service) StartDevice(deviceId int, getMeasurement measurement) {
+	device, _ := s.GetDeviceByID(deviceId)
 	go device.deviceTicker(s, getMeasurement)
 
 }
@@ -120,7 +122,7 @@ func (s *Service) UpdateDeviceInterval(id int, interval int) error {
 	return nil
 }
 
-func (s *Service) updateDeviceValue(d *Device, value string) {
+func (s *Service) updateDeviceValue(d *Device, value float64) {
 	d.Value = value
 }
 
@@ -168,7 +170,7 @@ func (s *Service) GetReadings() []string {
 		fwdReadings = append(fwdReadings, fmt.Sprintf("Device ID:%d\n", device))
 		for _, r := range readings {
 			fwdReadings = append(fwdReadings,
-				fmt.Sprintf("Nanoseconds: %d -- with value %s\n", r.When.Nanosecond(), r.Value))
+				fmt.Sprintf("Nanoseconds: %d -- with value %f\n", r.When.Nanosecond(), r.Value))
 		}
 	}
 	return fwdReadings
@@ -187,10 +189,21 @@ func (s *Service) validate(payload *DevicePayload) error {
 	return nil
 }
 
-func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
-	err := s.validate(payload)
-	if err != nil {
-		return nil, err
+func (s *Service) AddDevice(payload *DevicePayload) (int, error) {
+	if payload.Interval == 0 {
+		payload.Interval = 1000
 	}
-	return s.Dao.AddDevice(payload)
+	validateErr := s.validate(payload)
+	if validateErr != nil {
+		return 0, validateErr
+	}
+	id, addingErr := s.Dao.AddDevice(payload)
+	s.tempDevice = &Device{
+		Id:       id,
+		Name:     payload.Name,
+		Value:    payload.Value,
+		Interval: payload.Interval,
+		stopChan: nil,
+	}
+	return id, addingErr
 }

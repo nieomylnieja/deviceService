@@ -1,28 +1,22 @@
 package main
 
-import "errors"
-
 type Dao struct {
 	Readings map[int][]DeviceReading
 	Devices  map[int]Device
+
+	indexer int
 }
 
-func (d *Dao) AddDevice(device *DevicePayload) (*Device, error) {
-	dev := &Device{device.Id, device.Name, "",
-		device.Interval, make(chan bool)}
-	if d.deviceAlreadyExists(dev.Id) {
-		err := errors.New("The device with given ID already exists!")
-		return nil, err
+func (d *Dao) AddDevice(device *DevicePayload) (int, error) {
+	d.indexer++
+	dev := &Device{
+		Id:       d.indexer,
+		Name:     device.Name,
+		Value:    device.Value,
+		Interval: device.Interval,
+		stopChan: nil,
 	}
+
 	d.Devices[dev.Id] = *dev
-	return dev, nil
-}
-
-func (d *Dao) deviceAlreadyExists(id int) bool {
-	for _, dev := range d.Devices {
-		if dev.Id == id {
-			return true
-		}
-	}
-	return false
+	return dev.Id, nil
 }

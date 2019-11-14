@@ -7,24 +7,24 @@ import (
 
 type DeviceInfo struct {
 	Id    int
-	Value string
+	Value float64
 	When  time.Time
 }
 
 type DeviceReading struct {
-	Value string
+	Value float64
 	When  time.Time
 }
 
 type Device struct {
 	Id       int
 	Name     string
-	Value    string
+	Value    float64
 	Interval int
 	stopChan chan bool
 }
 
-type measurement func(int) string
+type measurement func(int) float64
 
 func (d *Device) deviceTicker(s *Service, getMeasurement measurement) {
 	ticker := time.NewTicker(time.Duration(d.Interval) * time.Millisecond)

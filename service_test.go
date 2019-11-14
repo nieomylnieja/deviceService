@@ -19,45 +19,39 @@ func Test_GivenTickerServiceIsStarted_WhenNewMeasurementComes_ThenReadingIsPasse
 		Interval: "1000",
 	}
 	devPayload, _ := s.CreateDevicePayload(input)
-	m := func(n int) string { return "10C" }
+	m := func(n int) float64 { return 10.24 }
 	dev, _ := s.Dao.AddDevice(devPayload)
 	s.StartDevice(dev, m)
 
 	time.Sleep(1 * time.Second)
 	s.stop()
 
-	expected := "10C"
+	expected := 10.24
 	result := fmt.Sprintf("%v", s.dao.Readings[0][0].Value)
 
 	assert.Equal(t, expected, result)
 }
 
 type mockDao struct {
-	returnValue *Device
+	returnValue int
 	returnErr   error
 	calledTimes int
 }
 
-func (m *mockDao) AddDevice(device *DevicePayload) (*Device, error) {
+func (m *mockDao) AddDevice(device *DevicePayload) (int, error) {
 	m.calledTimes++
+	m.returnValue++
 	return m.returnValue, m.returnErr
 }
 
 func Test_CorrectDevice_ServiceSavesNewDevice(t *testing.T) {
 	device := &DevicePayload{
-		Id:       0,
+		Value:    10.23,
 		Name:     "Thermostat",
 		Interval: 1000,
 	}
-	dao := &mockDao{
-		returnValue: &Device{
-			Id:       device.Id,
-			Name:     device.Name,
-			Value:    "",
-			Interval: device.Interval,
-			stopChan: nil,
-		},
-	}
+	dao := &mockDao{returnValue: 1}
+
 	out := Service{Dao: dao}
 
 	result, err := out.AddDevice(device)
@@ -71,14 +65,35 @@ func Test_CorrectDeviceAndDaoFails_ServiceFails(t *testing.T) {
 	dao := &mockDao{returnErr: fmt.Errorf("test error")}
 	out := Service{Dao: dao}
 
-	_, err := out.AddDevice(&DevicePayload{})
+	_, err := out.AddDevice(&DevicePayload{
+		Value:    10.23,
+		Name:     "Thermostat",
+		Interval: 1000,
+	})
 
 	assert.Error(t, err)
 }
 
-func Test_GivenIntervalValueBelowZero_ServiceFails(t *testing.T) {
+func Test_GivenIntervalValueBelowZeroOrEqualToZero_ServiceFails(t *testing.T) {
 	out := Service{Dao: &mockDao{}}
 
-	_, err := out.AddDevice(&DevicePayload{Interval: -1})
-	assert.Error(t, err)
+	_, err1 := out.AddDevice(&DevicePayload{Interval: -1})
+	_, err2 := out.AddDevice(&DevicePayload{Interval: 0})
+	assert.Error(t, err1)
+	assert.Error(t, err2)
+}
+
+func Test_CorrectPayload_DaoFillsOutId_ServiceDefaultsInterval(t *testing.T) {
+	dao := &mockDao{}
+	out := Service{Dao: dao}
+
+	_, err := out.AddDevice(&DevicePayload{Name: "aaa"})
+
+	expected := &Device{
+		Interval: 1000,
+		Name:     "aaa",
+		Id:       1,
+	}
+	assert.NoError(t, err)
+	assert.Equal(t, expected, out.tempDevice)
 }

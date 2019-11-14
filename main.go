@@ -18,7 +18,7 @@ func valueService(n int) string {
 	return result
 }
 
-func serviceTest(s *DeviceService) {
+func serviceTest(s *Service) {
 	var readings []string
 	finished := make(chan bool)
 	ticker := time.NewTicker(10 * time.Second)
@@ -42,7 +42,7 @@ func serviceTest(s *DeviceService) {
 	ticker.Stop()
 	finished <- true
 	s.stop()
-	fmt.Println("DeviceService stopped.")
+	fmt.Println("Service stopped.")
 }
 
 // HTTP HANDLERS
@@ -56,9 +56,8 @@ func main() {
 		Readings: make(map[int][]DeviceReading),
 		Devices:  make(map[int]Device),
 	}
-	s := DeviceService{dao: dao}
+	s := Service{dao: dao}
 
-	s.init()
 	s.run()
 
 	var err error
@@ -76,12 +75,12 @@ func main() {
 			fmt.Println(err)
 			continue
 		}
-		device, err = s.AddDevice(devicePayload)
+		device, err = s.Dao.AddDevice(devicePayload)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		s.startDevice(device, valueService)
+		s.StartDevice(device, valueService)
 	}
 
 	s.GetDevicesList()

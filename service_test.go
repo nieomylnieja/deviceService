@@ -8,9 +8,7 @@ import (
 )
 
 func Test_GivenTickerServiceIsStarted_WhenNewMeasurementComes_ThenReadingIsPassedToSaveChannel(t *testing.T) {
-	dao := &Dao{make(map[int][]DeviceReading), make(map[int]Device)}
-	s := DeviceService{dao: dao}
-	s.init()
+	s := Service{Dao: &Dao{Readings: make(map[int][]DeviceReading), Devices: make(map[int]Device)}}
 	s.run()
 
 	input := &RawInput{
@@ -18,9 +16,10 @@ func Test_GivenTickerServiceIsStarted_WhenNewMeasurementComes_ThenReadingIsPasse
 		Name:     "TestDevice",
 		Interval: "1000",
 	}
-	dev, _ := s.CreateDevicePayload(input)
+	devPayload, _ := s.CreateDevicePayload(input)
 	m := func(n int) string { return "10C" }
-	_ = s.startDevice(dev, m)
+	dev, _ := s.Dao.AddDevice(devPayload)
+	s.StartDevice(dev, m)
 
 	time.Sleep(1 * time.Second)
 	s.stop()
@@ -31,14 +30,28 @@ func Test_GivenTickerServiceIsStarted_WhenNewMeasurementComes_ThenReadingIsPasse
 	assert.Equal(t, expected, result)
 }
 
-type mockDao struct{}
+type mockDao struct {}
+
+func (m *mockDao) AddDevice(device *DevicePayload) (*Device, error) {
+	dev := &Device{
+		Id:       device.Id,
+		Name:     device.Name,
+		Value:    "",
+		Interval: device.Interval,
+		stopChan: nil,
+	}
+	return dev, nil
+}
 
 func Test_CorrectDevice_ServiceSavesNewDevice(t *testing.T) {
-	out := DeviceService{dao: mockDao{}}
+	out := Service{Dao: &mockDao{}}
 
-	device := Device{....}
-	result, err := out.addDeviceToDevices(device)
+	device := &DevicePayload{
+		Id:       0,
+		Name:     "Thermostat",
+		Interval: 1000,
+	}
+	_, err := out.Dao.AddDevice(device)
 
 	assert.NoError(t, err)
-	assert...
 }

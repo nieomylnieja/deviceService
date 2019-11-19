@@ -19,15 +19,15 @@ func (h *HandlersEnv) devicesHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&devPayload)
 	if err != nil {
-		fmt.Println(fmt.Errorf("error: %v", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println(fmt.Errorf("handlerError: %v", err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.service.AddDevice(&devPayload)
 	if err != nil {
-		fmt.Println(fmt.Errorf("error: %v", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println(fmt.Errorf("handlerError: %v", err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -35,10 +35,11 @@ func (h *HandlersEnv) devicesHandler(w http.ResponseWriter, r *http.Request) {
 
 	respBody, err := json.Marshal(d)
 	if err != nil {
-		fmt.Println(fmt.Errorf("error: %v", err))
-		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println(fmt.Errorf("handlerError: %v", err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	w.Write(respBody)
+	return
 }

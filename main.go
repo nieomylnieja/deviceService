@@ -46,14 +46,12 @@ func serviceTest(s *Service) {
 	fmt.Println("Service stopped.")
 }
 
-// HTTP HANDLERS
-
-/*func indexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Here you will be shown the readings:\n")
-}*/
-
 func main() {
-	dao := Dao{}
+	dao := Dao{
+		Readings: nil,
+		Devices:  make(map[int]Device),
+		indexer:  0,
+	}
 	s := Service{Dao: &dao}
 
 	renv := RouterEnv{&s}

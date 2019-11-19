@@ -1,9 +1,10 @@
 package main
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -22,6 +23,35 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 // TODO figure out how to actually return and read stuff properly
 func devicesHandler(w http.ResponseWriter, r *http.Request) {
-	resp := r.
-		w.Write()
+	var devPayload DevicePayload
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Println(fmt.Errorf("error: %v", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = json.Unmarshal(data, &devPayload)
+	if err != nil {
+		fmt.Println(fmt.Errorf("error: %v", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	d := Device{
+		Id:       1,
+		Name:     devPayload.Name,
+		Value:    devPayload.Value,
+		Interval: devPayload.Interval,
+		stopChan: nil,
+	}
+
+	respBody, err := json.Marshal(d)
+	if err != nil {
+		fmt.Println(fmt.Errorf("error: %v", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(respBody)
 }

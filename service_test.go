@@ -140,9 +140,6 @@ func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
 }
 
 func Test_DeviceHandler(t *testing.T) {
-	dao := &mockDao{}
-	out := Service{Dao: dao}
-
 	r := newRouter()
 	mockServer := httptest.NewServer(r)
 
@@ -162,7 +159,12 @@ func Test_DeviceHandler(t *testing.T) {
 		stopChan: nil,
 	}
 
-	// TODO decode the resp
+	var result Device
 
-	assert.Equal(t, expected, resp)
+	data, err := ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	err = json.Unmarshal(data, &result)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expected, result)
 }

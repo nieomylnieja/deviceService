@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -52,41 +53,7 @@ func serviceTest(s *Service) {
 }*/
 
 func main() {
-	dao := &Dao{
-		Readings: make(map[int][]DeviceReading),
-		Devices:  make(map[int]Device),
-	}
-	s := Service{dao: dao}
+	r := newRouter()
 
-	s.run()
-
-	var err error
-	var devicePayload *DevicePayload
-	var deviceId int
-	var input *RawInput
-	for i := 0; i < 3; i++ {
-		input = &RawInput{
-			Id:       strconv.Itoa(i),
-			Name:     "Thermostat",
-			Interval: "1000",
-		}
-		devicePayload, err = s.CreateDevicePayload(input)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		deviceId, err = s.Dao.AddDevice(devicePayload)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		s.StartDevice(deviceId, valueService)
-	}
-
-	s.GetDevicesList()
-
-	serviceTest(&s)
-
-	//http.HandleFunc("/", indexHandler)
-	//http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(":8000", r)
 }

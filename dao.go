@@ -14,7 +14,7 @@ func (d *Dao) AddDevice(device *DevicePayload) (int, error) {
 		Name:     device.Name,
 		Value:    device.Value,
 		Interval: device.Interval,
-		stopChan: nil,
+		stopChan: make(chan bool),
 	}
 
 	d.Devices[dev.Id] = *dev

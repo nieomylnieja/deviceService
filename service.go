@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -66,36 +65,6 @@ func (s *Service) tickerService() {
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
-}
-
-func (s *Service) parseDeviceInitInput(input *RawInput) (*DevicePayload, error) {
-	validate := validator.New()
-	validationErrors := validate.Struct(input)
-	if validationErrors != nil {
-		for _, err := range validationErrors.(validator.ValidationErrors) {
-			fmt.Println(err)
-		}
-		errForwarded := errors.New("input validation failed, device not created")
-		return nil, errForwarded
-	}
-	interval, err := strconv.Atoi(input.Interval)
-	if err != nil {
-		return nil, err
-	}
-	parsedInput := &DevicePayload{
-		Name:     "",
-		Interval: interval,
-		Value:    0,
-	}
-	return parsedInput, nil
-}
-
-func (s *Service) CreateDevicePayload(input *RawInput) (*DevicePayload, error) {
-	devicePayload, err := s.parseDeviceInitInput(input)
-	if err != nil {
-		return nil, err
-	}
-	return devicePayload, nil
 }
 
 func (s *Service) StartDevice(deviceId int, getMeasurement measurement) {

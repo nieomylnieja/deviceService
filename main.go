@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os/exec"
 	"regexp"
 	"strconv"
-	"time"
 )
 
 // reads through the temperatures provided by lm-sensors
@@ -19,43 +17,15 @@ func valueService(n int) float64 {
 	return result
 }
 
-func serviceTest(s *Service) {
-	var readings []string
-	finished := make(chan bool)
-	ticker := time.NewTicker(10 * time.Second)
-	go func() {
-		for {
-			select {
-			case <-finished:
-				return
-			default:
-				time.Sleep(5 * time.Second)
-			case <-ticker.C:
-				readings = s.GetReadings()
-				for _, r := range readings {
-					fmt.Print(r)
-				}
-				fmt.Println("Waiting for new results...")
-			}
-		}
-	}()
-	time.Sleep(30 * time.Second)
-	ticker.Stop()
-	finished <- true
-	s.stop()
-	fmt.Println("Service stopped.")
-}
-
 func main() {
 	dao := Dao{
-		Readings: nil,
-		Devices:  make(map[int]Device),
-		indexer:  0,
+		data:    make(map[int]Device),
+		indexer: 0,
 	}
 	s := Service{Dao: &dao}
+	s.run()
 
-	renv := RouterEnv{&s}
-	r := renv.newRouter()
+	r := newRouter(&s)
 
 	http.ListenAndServe(":8000", r)
 }

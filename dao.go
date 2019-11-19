@@ -1,8 +1,7 @@
 package main
 
 type Dao struct {
-	Readings map[int][]DeviceReading
-	Devices  map[int]Device
+	data map[int]Device
 
 	indexer int
 }
@@ -14,9 +13,8 @@ func (d *Dao) AddDevice(device *DevicePayload) (int, error) {
 		Name:     device.Name,
 		Value:    device.Value,
 		Interval: device.Interval,
-		stopChan: make(chan bool),
 	}
 
-	d.Devices[dev.Id] = *dev
+	d.data[dev.Id] = *dev
 	return dev.Id, nil
 }

@@ -53,7 +53,11 @@ func serviceTest(s *Service) {
 }*/
 
 func main() {
-	r := newRouter()
+	dao := Dao{}
+	s := Service{Dao: &dao}
+
+	renv := RouterEnv{&s}
+	r := renv.newRouter()
 
 	http.ListenAndServe(":8000", r)
 }

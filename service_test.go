@@ -102,7 +102,8 @@ func Test_CorrectPayload_DaoFillsOutId_ServiceDefaultsInterval(t *testing.T) {
 }
 
 func Test_GivenCorrectMethodAndRoute_RouterSuccessAndBodyMatches(t *testing.T) {
-	r := newRouter()
+	renv := RouterEnv{}
+	r := renv.newRouter()
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/")
@@ -120,7 +121,8 @@ func Test_GivenCorrectMethodAndRoute_RouterSuccessAndBodyMatches(t *testing.T) {
 }
 
 func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
-	r := newRouter()
+	renv := RouterEnv{}
+	r := renv.newRouter()
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/dcisve")
@@ -130,7 +132,8 @@ func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
 }
 
 func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
-	r := newRouter()
+	renv := RouterEnv{}
+	r := renv.newRouter()
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Post(mockServer.URL+"/", "", nil)
@@ -139,8 +142,12 @@ func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
 	assert.Equal(t, resp.StatusCode, http.StatusMethodNotAllowed)
 }
 
-func Test_DeviceHandler(t *testing.T) {
-	r := newRouter()
+func Test_GivenDevicePayload_HandlerReturnsDeviceObjectAndPerformsAddDevice(t *testing.T) {
+	dao := &mockDao{}
+	out := Service{Dao: dao}
+
+	renv := RouterEnv{&out}
+	r := renv.newRouter()
 	mockServer := httptest.NewServer(r)
 
 	dp := DevicePayload{"test name", 2, 0}
@@ -161,10 +168,8 @@ func Test_DeviceHandler(t *testing.T) {
 
 	var result Device
 
-	data, err := ioutil.ReadAll(resp.Body)
-	assert.NoError(t, err)
-	err = json.Unmarshal(data, &result)
-	assert.NoError(t, err)
+	err = json.NewDecoder(resp.Body).Decode(&result)
 
+	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
 }

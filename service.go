@@ -8,12 +8,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type RawInput struct {
-	Id       string `json:"id" validate:"gte=0,numeric"`
-	Name     string `json:"name" validate:"required,min=2,max=30"`
-	Interval string `json:"interval" validate:"required,gt=0,numeric"`
-}
-
 type DevicePayload struct {
 	Name     string  `json:"name" validate:"required,min=2,max=30"`
 	Interval int     `json:"interval" validate:"gt=0,numeric"`
@@ -162,11 +156,11 @@ func (s *Service) AddDevice(payload *DevicePayload) (int, error) {
 	if payload.Interval == 0 {
 		payload.Interval = 1000
 	}
-	validateErr := s.validate(payload)
-	if validateErr != nil {
-		return 0, validateErr
+	err := s.validate(payload)
+	if err != nil {
+		return 0, err
 	}
-	id, addingErr := s.Dao.AddDevice(payload)
+	id, err := s.Dao.AddDevice(payload)
 	s.tempDevice = &Device{
 		Id:       id,
 		Name:     payload.Name,
@@ -174,5 +168,5 @@ func (s *Service) AddDevice(payload *DevicePayload) (int, error) {
 		Interval: payload.Interval,
 		stopChan: nil,
 	}
-	return id, addingErr
+	return id, err
 }

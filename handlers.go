@@ -23,15 +23,12 @@ func (h *DeviceHandlers) devicesHandler(w http.ResponseWriter, r *http.Request) 
 	device, err := h.service.AddDevice(&devPayload)
 	if err != nil {
 		switch err.(type) {
-		case *ErrDao:
-			fmt.Println(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-		case *ErrValidation:
-			fmt.Println(err.Error())
+		case ErrValidation:
 			w.WriteHeader(http.StatusBadRequest)
+			fmt.Println(err.Error())
 		default:
 			fmt.Println("unhandled error!")
-			w.WriteHeader(http.StatusNotImplemented)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 		return
 	}

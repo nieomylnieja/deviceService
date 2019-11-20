@@ -20,8 +20,12 @@ type Service struct {
 	validator *validator.Validate
 }
 
-func (s *Service) run() {
-	s.validator = validator.New()
+func NewService(dao DeviceDao) *Service {
+	s := Service{
+		Dao:       dao,
+		validator: validator.New(),
+	}
+	return &s
 }
 
 func (s *Service) validate(payload *DevicePayload) error {
@@ -30,7 +34,7 @@ func (s *Service) validate(payload *DevicePayload) error {
 		for _, err := range validationErrors.(validator.ValidationErrors) {
 			fmt.Println(err)
 		}
-		return NewErrValidation("input validation failed")
+		return ErrValidation("")
 	}
 	return nil
 }
@@ -48,12 +52,10 @@ func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
 		return nil, err
 	}
 
-	d := Device{
+	return &Device{
 		Id:       id,
 		Name:     payload.Name,
 		Value:    payload.Value,
 		Interval: payload.Interval,
-	}
-
-	return &d, err
+	}, nil
 }

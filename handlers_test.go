@@ -11,8 +11,8 @@ import (
 
 func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
 	dao := &mockDao{}
-	out := Service{Dao: dao}
-	r := newRouter(&out)
+	out := NewService(dao)
+	r := newRouter(out)
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/dcisve")
@@ -23,8 +23,8 @@ func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
 
 func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
 	dao := &mockDao{}
-	out := Service{Dao: dao}
-	r := newRouter(&out)
+	out := NewService(dao)
+	r := newRouter(out)
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/devices")
@@ -34,10 +34,9 @@ func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
 }
 
 func Test_GivenDaoError_RouterReturns500(t *testing.T) {
-	dao := &mockDao{returnErr: NewErrDao("dao has failed")}
-	out := Service{Dao: dao}
-	out.run()
-	r := newRouter(&out)
+	dao := &mockDao{returnErr: ErrDao("")}
+	out := NewService(dao)
+	r := newRouter(out)
 	mockServer := httptest.NewServer(r)
 
 	requestBody := bytes.NewBuffer([]byte(`{"name": "test"}`))
@@ -48,9 +47,8 @@ func Test_GivenDaoError_RouterReturns500(t *testing.T) {
 
 func Test_GivenInvalidDevicePayload_HandlerReturns400(t *testing.T) {
 	dao := &mockDao{}
-	out := Service{Dao: dao}
-	out.run()
-	r := newRouter(&out)
+	out := NewService(dao)
+	r := newRouter(out)
 	mockServer := httptest.NewServer(r)
 
 	requestBody := bytes.NewBuffer([]byte(`{"name": "test", "interval": -1}`))
@@ -61,9 +59,8 @@ func Test_GivenInvalidDevicePayload_HandlerReturns400(t *testing.T) {
 
 func Test_GivenDevicePayload_HandlerReturnsDeviceObjectAndPerformsAddDevice(t *testing.T) {
 	dao := &mockDao{}
-	out := Service{Dao: dao}
-	out.run()
-	r := newRouter(&out)
+	out := NewService(dao)
+	r := newRouter(out)
 	mockServer := httptest.NewServer(r)
 
 	dp := DevicePayload{Name: "test name", Interval: 2}

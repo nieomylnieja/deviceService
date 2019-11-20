@@ -18,14 +18,9 @@ func valueService(n int) float64 {
 }
 
 func main() {
-	dao := Dao{
-		data:    make(map[int]Device),
-		indexer: 0,
-	}
-	s := Service{Dao: &dao}
-	s.run()
+	s := NewService(NewDao())
 
-	r := newRouter(&s)
+	r := newRouter(s)
 
 	http.ListenAndServe(":8000", r)
 }

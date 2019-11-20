@@ -6,6 +6,11 @@ type Dao struct {
 	indexer int
 }
 
+func NewDao() *Dao {
+	d := Dao{data: make(map[int]Device)}
+	return &d
+}
+
 func (d *Dao) AddDevice(device *DevicePayload) (int, error) {
 	d.indexer++
 	dev := &Device{

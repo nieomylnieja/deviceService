@@ -35,19 +35,7 @@ func (dh *DeviceHandlers) addDeviceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	respBody, err := json.Marshal(device)
-	if err != nil {
-		fmt.Printf("handlerError: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	_, err = w.Write(respBody)
-	if err != nil {
-		fmt.Printf("handlerError: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	dh.sendDeviceObject(w, device)
 
 	return
 }
@@ -74,6 +62,12 @@ func (dh *DeviceHandlers) getDeviceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	dh.sendDeviceObject(w, device)
+
+	return
+}
+
+func (dh *DeviceHandlers) sendDeviceObject(w http.ResponseWriter, device *Device) {
 	respBody, err := json.Marshal(device)
 	if err != nil {
 		fmt.Printf("handlerError: %v", err)
@@ -87,6 +81,4 @@ func (dh *DeviceHandlers) getDeviceHandler(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	return
 }

@@ -23,3 +23,12 @@ func (d *Dao) AddDevice(device *DevicePayload) (int, error) {
 	d.data[dev.Id] = *dev
 	return dev.Id, nil
 }
+
+func (d *Dao) GetDevice(id int) (*Device, error) {
+	for _, device := range d.data {
+		if device.Id == id {
+			return &device, nil
+		}
+	}
+	return nil, ErrNotFound("")
+}

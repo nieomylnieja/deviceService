@@ -10,7 +10,7 @@ type DeviceHandlers struct {
 	service *Service
 }
 
-func (h *DeviceHandlers) devicesHandler(w http.ResponseWriter, r *http.Request) {
+func (dh *DeviceHandlers) addDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	var devPayload DevicePayload
 
 	err := json.NewDecoder(r.Body).Decode(&devPayload)
@@ -20,7 +20,7 @@ func (h *DeviceHandlers) devicesHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	device, err := h.service.AddDevice(&devPayload)
+	device, err := dh.service.AddDevice(&devPayload)
 	if err != nil {
 		switch err.(type) {
 		case ErrValidation:
@@ -47,5 +47,9 @@ func (h *DeviceHandlers) devicesHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	return
+}
+
+func (dh *DeviceHandlers) getDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }

@@ -8,7 +8,8 @@ func newRouter(s *Service) *mux.Router {
 	router := mux.NewRouter()
 
 	devicesHandlerEnv := DeviceHandlers{s}
-	router.HandleFunc("/devices", devicesHandlerEnv.devicesHandler).Methods("POST")
+	router.HandleFunc("/devices", devicesHandlerEnv.addDeviceHandler).Methods("POST")
+	router.HandleFunc("/devices/{id}", devicesHandlerEnv.getDeviceHandler).Methods("GET")
 
 	return router
 }

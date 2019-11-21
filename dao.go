@@ -25,10 +25,8 @@ func (d *Dao) AddDevice(device *DevicePayload) (int, error) {
 }
 
 func (d *Dao) GetDevice(id int) (*Device, error) {
-	for _, device := range d.data {
-		if device.Id == id {
-			return &device, nil
-		}
+	if device, ok := d.data[id]; ok {
+		return &device, nil
 	}
 	return nil, nil
 }

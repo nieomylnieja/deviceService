@@ -116,3 +116,33 @@ func Test_GetAllDevicesHandler_NoParams_HandlerDefaultsLimitAndPage(t *testing.T
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
+
+func Test_GetAllDevicesHandler_GivenDaoError_HandlerReturns500(t *testing.T) {
+	r := newRouter(NewService(&mockDao{returnErr: ErrDao("")}))
+	mockServer := httptest.NewServer(r)
+
+	resp, err := http.Get(mockServer.URL + "/devices")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
+
+func Test_GetAllDevicesHandler_GivenLimitZero_HandlerReturnsAllDevices(t *testing.T) {
+	m := &mockDao{data: make(map[int]Device)}
+	m.data[0] = Device{Name: "test name"}
+	r := newRouter(NewService(m))
+	mockServer := httptest.NewServer(r)
+
+	resp, err := http.Get(mockServer.URL + "/devices?limit=0")
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	expected := make(map[int]Device)
+	expected[0] = Device{Name: "test name"}
+
+	var result *map[int]Device
+	err = json.NewDecoder(resp.Body).Decode(&result)
+
+	assert.NoError(t, err)
+	assert.Equal(t, &expected, result)
+}

@@ -88,27 +88,25 @@ func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	fmt.Println(limit, page)
-	/*devices, err := dh.service.GetAllDevices()
+	devices, err := dh.service.GetAllDevices()
 	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if limit == 0 {
-		respBody, _ := json.Marshal(*devices)
-		_, _ = w.Write(respBody)
+		dh.writeObject(w, devices)
+		return
 	}
 
-	if len(*devices) / limit > page {
-		emptyArr := make(map[int]Device, 0)
-		respBody, _ := json.Marshal(emptyArr)
-		_, _ = w.Write(respBody)
+	if len(*devices)/limit > page {
+
 	}
-	*/
 }
 
-func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, device *Device) {
-	respBody, err := json.Marshal(device)
+func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, input interface{}) {
+	respBody, err := json.Marshal(input)
 	if err != nil {
 		fmt.Printf("handlerError: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

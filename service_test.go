@@ -10,7 +10,7 @@ type mockDao struct {
 	returnErr   error
 	calledTimes int
 	device      *Device
-	data        *map[int]Device
+	data        map[int]Device
 }
 
 func (m *mockDao) AddDevice(device *DevicePayload) (int, error) {
@@ -24,7 +24,7 @@ func (m *mockDao) GetDevice(id int) (*Device, error) {
 }
 
 func (m *mockDao) GetAllDevices() (*map[int]Device, error) {
-	return m.data, m.returnErr
+	return &m.data, m.returnErr
 }
 
 func Test_AddDevice_CorrectDevice_ServiceSavesNewDevice(t *testing.T) {
@@ -113,8 +113,7 @@ func Test_GetDevice_GivenIdThatDoesntExist_ServiceReturnsNil(t *testing.T) {
 }
 
 func Test_GetAllDevices_GivenEmptyList_ServiceReturnsEmptyList(t *testing.T) {
-	mockData := make(map[int]Device)
-	out := NewService(&mockDao{data: &mockData})
+	out := NewService(&mockDao{data: make(map[int]Device)})
 
 	devs, err := out.GetAllDevices()
 

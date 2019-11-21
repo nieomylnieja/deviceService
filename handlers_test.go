@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func Test_GivenInvalidDevicePayload_HandlerReturns400(t *testing.T) {
+func Test_AddDeviceHandler_GivenInvalidDevicePayload_HandlerReturns400(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)
 
@@ -19,7 +19,7 @@ func Test_GivenInvalidDevicePayload_HandlerReturns400(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
-func Test_GivenDevicePayload_HandlerReturnsDeviceObjectAndPerformsAddDevice(t *testing.T) {
+func Test_AddDeviceHandler_GivenDevicePayload_HandlerReturnsDeviceObjectAndPerformsAddDevice(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)
 
@@ -45,7 +45,7 @@ func Test_GivenDevicePayload_HandlerReturnsDeviceObjectAndPerformsAddDevice(t *t
 	assert.Equal(t, expected, result)
 }
 
-func Test_GivenNonNumericId_HandlerReturnsError400(t *testing.T) {
+func Test_GetDeviceHandler_GivenNonNumericId_HandlerReturnsError400(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)
 
@@ -55,7 +55,7 @@ func Test_GivenNonNumericId_HandlerReturnsError400(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
-func Test_GivenNonExistingId_HandlerReturnsError404(t *testing.T) {
+func Test_GetDeviceHandler_GivenNonExistingId_HandlerReturnsError404(t *testing.T) {
 	r := newRouter(NewService(&mockDao{device: nil}))
 	mockServer := httptest.NewServer(r)
 
@@ -65,7 +65,7 @@ func Test_GivenNonExistingId_HandlerReturnsError404(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
-func Test_GivenErrorInDao_HandlerReturnsError500(t *testing.T) {
+func Test_GetDeviceHandler_GivenErrorInDao_HandlerReturnsError500(t *testing.T) {
 	r := newRouter(NewService(&mockDao{returnErr: ErrDao("")}))
 	mockServer := httptest.NewServer(r)
 
@@ -75,7 +75,7 @@ func Test_GivenErrorInDao_HandlerReturnsError500(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 
-func Test_GivenCorrectId_HandlerReturnsDeviceObject(t *testing.T) {
+func Test_GetDeviceHandler_GivenCorrectId_HandlerReturnsDeviceObject(t *testing.T) {
 	r := newRouter(NewService(&mockDao{device: &Device{Name: "test name"}}))
 	mockServer := httptest.NewServer(r)
 
@@ -90,4 +90,29 @@ func Test_GivenCorrectId_HandlerReturnsDeviceObject(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
+}
+
+func Test_GetAllDevicesHandler_GivenWrongInput_HandlerReturns400(t *testing.T) {
+	r := newRouter(NewService(&mockDao{}))
+	mockServer := httptest.NewServer(r)
+
+	urls := []string{"/devices?limit=a", "/devices?page=a",
+		"/devices?limit=1&page=a", "/devices?limit=-1",
+		"/devices?page=-1"}
+	for _, url := range urls {
+		resp, err := http.Get(mockServer.URL + url)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	}
+}
+
+func Test_GetAllDevicesHandler_NoParams_HandlerDefaultsLimitAndPage(t *testing.T) {
+	r := newRouter(NewService(&mockDao{}))
+	mockServer := httptest.NewServer(r)
+
+	resp, err := http.Get(mockServer.URL + "/devices")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }

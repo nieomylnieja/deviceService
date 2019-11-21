@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -37,15 +38,13 @@ func (dh *DeviceHandlers) AddDeviceHandler(w http.ResponseWriter, r *http.Reques
 
 	dh.writeObject(w, device)
 
-	return
 }
 
 func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	input := mux.Vars(r)["id"]
-	id, err := strconv.Atoi(input)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(err.Error())
+
+	id, ok := dh.stringIsPositiveNumberReturnInt(w, input)
+	if !ok {
 		return
 	}
 
@@ -63,11 +62,49 @@ func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Reques
 
 	dh.writeObject(w, device)
 
-	return
 }
 
-func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, device *Device) {
-	return
+func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Request) {
+	var ok bool
+	var limit, page int
+	keys := r.URL.Query()
+
+	limitStr := keys.Get("limit")
+	if limitStr == "" {
+		limit = 100
+	} else {
+		limit, ok = dh.stringIsPositiveNumberReturnInt(w, limitStr)
+		if !ok {
+			return
+		}
+	}
+	pageStr := keys.Get("page")
+	if pageStr == "" {
+		page = 0
+	} else {
+		page, ok = dh.stringIsPositiveNumberReturnInt(w, pageStr)
+		if !ok {
+			return
+		}
+	}
+
+	fmt.Println(limit, page)
+	/*devices, err := dh.service.GetAllDevices()
+	if err != nil {
+		return
+	}
+
+	if limit == 0 {
+		respBody, _ := json.Marshal(*devices)
+		_, _ = w.Write(respBody)
+	}
+
+	if len(*devices) / limit > page {
+		emptyArr := make(map[int]Device, 0)
+		respBody, _ := json.Marshal(emptyArr)
+		_, _ = w.Write(respBody)
+	}
+	*/
 }
 
 func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, device *Device) {
@@ -84,4 +121,18 @@ func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, device *Device) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func (dh *DeviceHandlers) stringIsPositiveNumberReturnInt(w http.ResponseWriter, input string) (int, bool) {
+	id, err := strconv.Atoi(input)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println(err.Error())
+		return 0, false
+	}
+	if id < 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println(errors.New("input is a negative number"))
+	}
+	return id, true
 }

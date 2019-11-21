@@ -12,7 +12,7 @@ type DeviceHandlers struct {
 	service *Service
 }
 
-func (dh *DeviceHandlers) addDeviceHandler(w http.ResponseWriter, r *http.Request) {
+func (dh *DeviceHandlers) AddDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	var devPayload DevicePayload
 
 	err := json.NewDecoder(r.Body).Decode(&devPayload)
@@ -35,12 +35,12 @@ func (dh *DeviceHandlers) addDeviceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	dh.sendDeviceObject(w, device)
+	dh.writeObject(w, device)
 
 	return
 }
 
-func (dh *DeviceHandlers) getDeviceHandler(w http.ResponseWriter, r *http.Request) {
+func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	input := mux.Vars(r)["id"]
 	id, err := strconv.Atoi(input)
 	if err != nil {
@@ -50,24 +50,23 @@ func (dh *DeviceHandlers) getDeviceHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	device, err := dh.service.GetDevice(id)
+	if device == nil && err == nil {
+		fmt.Println("device was not found")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 	if err != nil {
-		switch err.(type) {
-		case ErrNotFound:
-			w.WriteHeader(http.StatusNotFound)
-			fmt.Println(err.Error())
-		default:
-			fmt.Println(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	dh.sendDeviceObject(w, device)
+	dh.writeObject(w, device)
 
 	return
 }
 
-func (dh *DeviceHandlers) sendDeviceObject(w http.ResponseWriter, device *Device) {
+func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, device *Device) {
 	respBody, err := json.Marshal(device)
 	if err != nil {
 		fmt.Printf("handlerError: %v", err)

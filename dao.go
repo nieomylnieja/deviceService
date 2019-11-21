@@ -30,5 +30,5 @@ func (d *Dao) GetDevice(id int) (*Device, error) {
 			return &device, nil
 		}
 	}
-	return nil, ErrNotFound("")
+	return nil, nil
 }

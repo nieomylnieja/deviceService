@@ -56,7 +56,7 @@ func Test_GivenNonNumericId_HandlerReturnsError400(t *testing.T) {
 }
 
 func Test_GivenNonExistingId_HandlerReturnsError404(t *testing.T) {
-	r := newRouter(NewService(&mockDao{returnErr: ErrNotFound("")}))
+	r := newRouter(NewService(&mockDao{device: nil}))
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/devices/123")

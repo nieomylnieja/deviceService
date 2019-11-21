@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"sort"
 )
 
 type DevicePayload struct {
@@ -77,4 +78,24 @@ func (s *Service) GetAllDevices() (*map[int]Device, error) {
 		return nil, err
 	}
 	return devices, nil
+}
+
+func (s *Service) GetSortedDevicesList() (*[]Device, error) {
+	devices, err := s.GetAllDevices()
+	if err != nil {
+		return nil, err
+	}
+
+	var keys []int
+	for k := range *devices {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
+	sortedDevicesList := []Device{} // I think I ought to initialize it so that JSON can actually return and empty list
+	for _, k := range keys {
+		sortedDevicesList = append(sortedDevicesList, (*devices)[k])
+	}
+
+	return &sortedDevicesList, nil
 }

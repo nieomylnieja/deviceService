@@ -88,7 +88,7 @@ func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	devices, err := dh.service.GetAllDevices()
+	devices, err := dh.service.GetSortedDevicesList()
 	if err != nil {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -100,9 +100,19 @@ func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if len(*devices)/limit > page {
-
+	if limit*page > len(*devices) {
+		//_, err = w.Write([]byte(`[]`))  feels faster and more explicit, but I have to handle that err
+		dh.writeObject(w, []int{}) // this one seems cleaner
+		return
 	}
+
+	if page*limit+limit >= len(*devices) {
+		dh.writeObject(w, (*devices)[page*limit:len(*devices)])
+		return
+	}
+
+	dh.writeObject(w, (*devices)[page*limit:page*limit+limit])
+
 }
 
 func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, input interface{}) {
@@ -131,6 +141,7 @@ func (dh *DeviceHandlers) stringIsPositiveNumberReturnInt(w http.ResponseWriter,
 	if id < 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Println(errors.New("input is a negative number"))
+		return 0, false
 	}
 	return id, true
 }

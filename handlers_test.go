@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -137,12 +138,67 @@ func Test_GetAllDevicesHandler_GivenLimitZero_HandlerReturnsAllDevices(t *testin
 	assert.NoError(t, err)
 	defer resp.Body.Close()
 
-	expected := make(map[int]Device)
-	expected[0] = Device{Name: "test name"}
+	var expected []Device
+	expected = append(expected, Device{Name: "test name"})
 
-	var result *map[int]Device
+	var result []Device
+	err = json.NewDecoder(resp.Body).Decode(&result)
+
+	fmt.Println(result)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, result)
+}
+
+func Test_GetAllDevicesHandler_GivenPageThatHasNoDevicesToShow_HandlerReturnsEmptyJsonArray(t *testing.T) {
+	r := newRouter(NewService(&mockDao{}))
+	mockServer := httptest.NewServer(r)
+
+	resp, err := http.Get(mockServer.URL + "/devices?limit=1&page=1")
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	expected := []int{}
+
+	var result []int
 	err = json.NewDecoder(resp.Body).Decode(&result)
 
 	assert.NoError(t, err)
-	assert.Equal(t, &expected, result)
+	assert.Equal(t, expected, result)
+}
+
+func Test_GetAllDevicesHandler_GivenLimitGreaterThanSizeOfList_HandlerReturnsSuccess(t *testing.T) {
+	m := &mockDao{data: make(map[int]Device)}
+	m.data[0] = Device{Name: "test name"}
+	r := newRouter(NewService(m))
+	mockServer := httptest.NewServer(r)
+
+	resp, err := http.Get(mockServer.URL + "/devices")
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func Test_GetAllDevicesHandler_GivenLimitAndPage_HandlerReturnsCorrectList(t *testing.T) {
+	m := &mockDao{data: make(map[int]Device)}
+	for _, i := range []int{5, 3, 0, 25, 8} {
+		m.data[i] = Device{Id: i}
+	}
+	r := newRouter(NewService(m))
+	mockServer := httptest.NewServer(r)
+
+	resp, err := http.Get(mockServer.URL + "/devices?limit=2&page=2")
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	var expected []Device
+	expected = append(expected, Device{Id: 25})
+
+	var result []Device
+	err = json.NewDecoder(resp.Body).Decode(&result)
+
+	fmt.Println(result)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, result)
 }

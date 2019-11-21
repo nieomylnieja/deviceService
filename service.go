@@ -14,11 +14,13 @@ type DevicePayload struct {
 type DeviceDao interface {
 	AddDevice(device *DevicePayload) (int, error)
 	GetDevice(id int) (*Device, error)
+	GetAllDevices() (*map[int]Device, error)
 }
 
 type Service struct {
-	Dao       DeviceDao
-	validator *validator.Validate
+	Dao         DeviceDao
+	validator   *validator.Validate
+	indexHolder []int
 }
 
 func NewService(dao DeviceDao) *Service {
@@ -67,4 +69,12 @@ func (s *Service) GetDevice(id int) (*Device, error) {
 		return nil, err
 	}
 	return device, nil
+}
+
+func (s *Service) GetAllDevices() (*map[int]Device, error) {
+	devices, err := s.Dao.GetAllDevices()
+	if err != nil {
+		return nil, err
+	}
+	return devices, nil
 }

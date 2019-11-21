@@ -30,3 +30,7 @@ func (d *Dao) GetDevice(id int) (*Device, error) {
 	}
 	return nil, nil
 }
+
+func (d *Dao) GetAllDevices() (*map[int]Device, error) {
+	return &d.data, nil
+}

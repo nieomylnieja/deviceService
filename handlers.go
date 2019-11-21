@@ -66,6 +66,10 @@ func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Reques
 	return
 }
 
+func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, device *Device) {
+	return
+}
+
 func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, device *Device) {
 	respBody, err := json.Marshal(device)
 	if err != nil {

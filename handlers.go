@@ -3,14 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
 type DeviceHandlers struct {
 	service *Service
 }
 
-func (h *DeviceHandlers) devicesHandler(w http.ResponseWriter, r *http.Request) {
+func (dh *DeviceHandlers) AddDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	var devPayload DevicePayload
 
 	err := json.NewDecoder(r.Body).Decode(&devPayload)
@@ -20,7 +22,7 @@ func (h *DeviceHandlers) devicesHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	device, err := h.service.AddDevice(&devPayload)
+	device, err := dh.service.AddDevice(&devPayload)
 	if err != nil {
 		switch err.(type) {
 		case ErrValidation:
@@ -33,6 +35,38 @@ func (h *DeviceHandlers) devicesHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	dh.writeObject(w, device)
+
+	return
+}
+
+func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	input := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(input)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println(err.Error())
+		return
+	}
+
+	device, err := dh.service.GetDevice(id)
+	if device == nil && err == nil {
+		fmt.Println("device was not found")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	dh.writeObject(w, device)
+
+	return
+}
+
+func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, device *Device) {
 	respBody, err := json.Marshal(device)
 	if err != nil {
 		fmt.Printf("handlerError: %v", err)
@@ -46,6 +80,4 @@ func (h *DeviceHandlers) devicesHandler(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	return
 }

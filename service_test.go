@@ -9,12 +9,17 @@ type mockDao struct {
 	returnValue int
 	returnErr   error
 	calledTimes int
+	device      *Device
 }
 
 func (m *mockDao) AddDevice(device *DevicePayload) (int, error) {
 	m.calledTimes++
 	m.returnValue++
 	return m.returnValue, m.returnErr
+}
+
+func (m *mockDao) GetDevice(id int) (*Device, error) {
+	return m.device, m.returnErr
 }
 
 func Test_CorrectDevice_ServiceSavesNewDevice(t *testing.T) {
@@ -34,8 +39,7 @@ func Test_CorrectDevice_ServiceSavesNewDevice(t *testing.T) {
 }
 
 func Test_CorrectDeviceAndDaoFails_ServiceFails(t *testing.T) {
-	dao := &mockDao{returnErr: ErrDao("")}
-	out := NewService(dao)
+	out := NewService(&mockDao{returnErr: ErrDao("")})
 
 	_, err := out.AddDevice(&DevicePayload{
 		Value:    10.23,
@@ -57,8 +61,7 @@ func Test_GivenIntervalValueBelowZeroOrEqualToZero_ServiceFails(t *testing.T) {
 }
 
 func Test_CorrectPayload_DaoFillsOutId(t *testing.T) {
-	dao := &mockDao{}
-	out := NewService(dao)
+	out := NewService(&mockDao{})
 
 	dev, err := out.AddDevice(&DevicePayload{Name: "aaa"})
 
@@ -69,8 +72,7 @@ func Test_CorrectPayload_DaoFillsOutId(t *testing.T) {
 }
 
 func Test_CorrectPayload_ServiceDefaultsInterval(t *testing.T) {
-	dao := &mockDao{}
-	out := NewService(dao)
+	out := NewService(&mockDao{})
 
 	dev, err := out.AddDevice(&DevicePayload{Name: "aaa"})
 
@@ -78,4 +80,21 @@ func Test_CorrectPayload_ServiceDefaultsInterval(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected.Interval, dev.Interval)
+}
+
+func Test_GivenDeviceId_ServiceReturnsDeviceObject(t *testing.T) {
+	out := NewService(&mockDao{device: &Device{Name: "name"}})
+
+	dev, err := out.GetDevice(1)
+
+	assert.NoError(t, err)
+	assert.Equal(t, &Device{Name: "name"}, dev)
+}
+
+func Test_GivenIdThatDoesntExist_ServiceReturnsErrorNotfound(t *testing.T) {
+	out := NewService(&mockDao{returnErr: ErrNotFound("")})
+
+	_, err := out.GetDevice(1)
+
+	assert.Error(t, err)
 }

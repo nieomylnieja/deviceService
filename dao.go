@@ -32,12 +32,17 @@ func (d *Dao) GetDevice(id int) (*Device, error) {
 }
 
 func (d *Dao) GetManyDevices(limit int, page int) ([]Device, error) {
+	i := 0
 	if limit == 0 {
-		allDevices := make([]Device, d.indexer)
-		for _, device := range d.data {
-			allDevices = append(allDevices, device)
+		devices := make([]Device, 0, d.indexer)
+		for _, dev := range d.data {
+			if i >= d.indexer {
+				break
+			}
+			devices = append(devices, dev)
+			i++
 		}
-		return allDevices, nil
+		return devices, nil
 	}
 
 	if limit*page > d.indexer {
@@ -45,16 +50,24 @@ func (d *Dao) GetManyDevices(limit int, page int) ([]Device, error) {
 	}
 
 	if page*limit+limit >= d.indexer {
-		someDevices := make([]Device, d.indexer%limit)
-		for _, device := range d.data {
-			someDevices = append(someDevices, device)
+		devices := make([]Device, 0, d.indexer%limit)
+		for _, dev := range d.data {
+			if i >= d.indexer%limit {
+				break
+			}
+			devices = append(devices, dev)
+			i++
 		}
-		return someDevices, nil
+		return devices, nil
 	}
 
-	someDevices := make([]Device, limit)
-	for _, device := range d.data {
-		someDevices = append(someDevices, device)
+	devices := make([]Device, 0, limit)
+	for _, dev := range d.data {
+		if i >= limit {
+			break
+		}
+		devices = append(devices, dev)
+		i++
 	}
-	return someDevices, nil
+	return devices, nil
 }

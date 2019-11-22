@@ -23,8 +23,6 @@ func Test_WriteObject_GivenAnObject_FuncWritesMarshalledObject(t *testing.T) {
 }
 
 func Test_ConvertToPositiveInteger_GivenWrongInput_FuncReturnsError(t *testing.T) {
-	dh := DeviceHandlers{}
-
 	tests := map[string]string{
 		"char":            "a",
 		"negative number": "-2",
@@ -33,21 +31,19 @@ func Test_ConvertToPositiveInteger_GivenWrongInput_FuncReturnsError(t *testing.T
 	}
 
 	for name, tc := range tests {
-		_, err := dh.convertToPositiveInteger(tc)
+		_, err := convertToPositiveInteger(tc)
 		assert.Error(t, err, name)
 	}
 }
 
 func Test_ConvertToPositiveInteger_GivenCorrectInput_FuncReturnsPositiveInt(t *testing.T) {
-	dh := DeviceHandlers{}
-
 	tests := map[string]string{
 		"zero":              "0",
 		"non zero positive": "14",
 	}
 
 	for name, tc := range tests {
-		actual, err := dh.convertToPositiveInteger(tc)
+		actual, err := convertToPositiveInteger(tc)
 
 		assert.NoError(t, err, name)
 		assert.IsType(t, 1, actual, name)
@@ -175,20 +171,37 @@ func Test_GetManyDevicesHandler_GivenDaoError_HandlerReturns500(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 
-func Test_GetManyDevicesHandler_GivenLimitZero_HandlerReturnsAllDevices(t *testing.T) {
-	r := newRouter(NewService(&mockDao{data: []Device{{Name: "test name"}}}))
+func Test_GetManyDevicesHandler_GivenLimitAndPage_HandlerReturnsCorrectNumberOfDevicesPerPage(t *testing.T) {
+	t.Skip()
+	var mockData []Device
+	for i := 0; i < 5; i++ {
+		mockData = append(mockData, Device{Name: "test"})
+	}
+
+	r := newRouter(NewService(&mockDao{data: mockData}))
 	mockServer := httptest.NewServer(r)
 
-	resp, err := http.Get(mockServer.URL + "/devices?limit=0")
-	assert.NoError(t, err)
+	tests := map[string]struct {
+		expected []Device
+		url      string
+	}{
+		"zero limit":        {expected: mockData, url: "/devices?limit=0"},
+		"limit 2 page 1":    {expected: mockData[:2], url: "/devices?limit=2&page=1"},
+		"limit 2 page 2":    {expected: mockData[:2], url: "/devices?limit=2&page=2"},
+		"limit 4 page 1":    {expected: mockData[:1], url: "/devices?limit=4&page=1"},
+		"zero limit page 3": {expected: []Device{}, url: "/devices?page=3"},
+	}
 
-	expected := []Device{{Name: "test name"}}
+	for name, tc := range tests {
+		resp, err := http.Get(mockServer.URL + tc.url)
+		assert.NoError(t, err, name)
 
-	var result []Device
-	err = json.NewDecoder(resp.Body).Decode(&result)
+		var result []Device
+		err = json.NewDecoder(resp.Body).Decode(&result)
 
-	assert.NoError(t, err)
-	assert.Equal(t, expected, result)
+		assert.NoError(t, err, name)
+		assert.Equal(t, tc.expected, result, name)
+	}
 }
 
 func Test_GetManyDevicesHandler_GivenPageThatHasNoDevicesToShow_HandlerReturnsEmptyJsonArray(t *testing.T) {

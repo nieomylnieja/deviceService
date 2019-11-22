@@ -18,8 +18,8 @@ func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
-// Cant use it currently as I don't have a route that can allow for that test
-/*func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
+func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
+	t.Skip()
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)
 
@@ -27,7 +27,7 @@ func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
-}*/
+}
 
 func Test_GivenDaoError_RouterReturns500(t *testing.T) {
 	r := newRouter(NewService(&mockDao{returnErr: ErrDao("")}))

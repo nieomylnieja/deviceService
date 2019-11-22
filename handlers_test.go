@@ -10,6 +10,52 @@ import (
 	"testing"
 )
 
+func Test_WriteObject_GivenAnObject_FuncWritesMarshalledObject(t *testing.T) {
+	dh := DeviceHandlers{}
+	resp := httptest.NewRecorder()
+
+	dh.writeObject(resp, Device{Id: 1})
+
+	var actual Device
+	err := json.NewDecoder(resp.Body).Decode(&actual)
+
+	assert.NoError(t, err)
+	assert.Equal(t, Device{Id: 1}, actual)
+}
+
+func Test_ConvertToPositiveInteger_GivenWrongInput_FuncReturnsError(t *testing.T) {
+	dh := DeviceHandlers{}
+
+	tests := map[string]string{
+		"char":            "a",
+		"negative number": "-2",
+		"float":           "0.0",
+		"interface":       "{}",
+	}
+
+	for name, tc := range tests {
+		_, err := dh.convertToPositiveInteger(tc)
+		assert.Error(t, err, name)
+	}
+}
+
+func Test_ConvertToPositiveInteger_GivenCorrectInput_FuncReturnsPositiveInt(t *testing.T) {
+	dh := DeviceHandlers{}
+
+	tests := map[string]string{
+		"zero":              "0",
+		"non zero positive": "14",
+	}
+
+	for name, tc := range tests {
+		actual, err := dh.convertToPositiveInteger(tc)
+
+		assert.NoError(t, err, name)
+		assert.IsType(t, 1, actual, name)
+		assert.GreaterOrEqual(t, actual, 0, name)
+	}
+}
+
 func Test_AddDeviceHandler_GivenInvalidDevicePayload_HandlerReturns400(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)

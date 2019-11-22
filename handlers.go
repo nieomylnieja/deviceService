@@ -43,8 +43,10 @@ func (dh *DeviceHandlers) AddDeviceHandler(w http.ResponseWriter, r *http.Reques
 func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	input := mux.Vars(r)["id"]
 
-	id, ok := dh.stringIsPositiveNumberReturnInt(w, input)
-	if !ok {
+	id, err := dh.convertToPositiveInteger(input)
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -65,7 +67,7 @@ func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Request) {
-	var ok bool
+	var err error
 	var limit, page int
 	keys := r.URL.Query()
 
@@ -73,8 +75,10 @@ func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Re
 	if limitStr == "" {
 		limit = 100
 	} else {
-		limit, ok = dh.stringIsPositiveNumberReturnInt(w, limitStr)
-		if !ok {
+		limit, err = dh.convertToPositiveInteger(limitStr)
+		if err != nil {
+			fmt.Println(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 	}
@@ -82,8 +86,10 @@ func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Re
 	if pageStr == "" {
 		page = 0
 	} else {
-		page, ok = dh.stringIsPositiveNumberReturnInt(w, pageStr)
-		if !ok {
+		page, err = dh.convertToPositiveInteger(pageStr)
+		if err != nil {
+			fmt.Println(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 	}
@@ -101,8 +107,7 @@ func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	if limit*page > len(*devices) {
-		//_, err = w.Write([]byte(`[]`))  feels faster and more explicit, but I have to handle that err
-		dh.writeObject(w, []int{}) // this one seems cleaner
+		dh.writeObject(w, nil)
 		return
 	}
 
@@ -115,8 +120,8 @@ func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Re
 
 }
 
-func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, input interface{}) {
-	respBody, err := json.Marshal(input)
+func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, object interface{}) {
+	respBody, err := json.Marshal(object)
 	if err != nil {
 		fmt.Printf("handlerError: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -131,17 +136,13 @@ func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, input interface{}) 
 	}
 }
 
-func (dh *DeviceHandlers) stringIsPositiveNumberReturnInt(w http.ResponseWriter, input string) (int, bool) {
-	id, err := strconv.Atoi(input)
+func (dh *DeviceHandlers) convertToPositiveInteger(s string) (int, error) {
+	id, err := strconv.Atoi(s)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(err.Error())
-		return 0, false
+		return 0, err
 	}
 	if id < 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(errors.New("input is a negative number"))
-		return 0, false
+		return 0, errors.New("input is a negative number")
 	}
-	return id, true
+	return id, nil
 }

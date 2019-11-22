@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
-	"sort"
 	"testing"
 )
 
@@ -11,7 +10,7 @@ type mockDao struct {
 	returnErr   error
 	calledTimes int
 	device      *Device
-	data        map[int]Device
+	data        []Device
 }
 
 func (m *mockDao) AddDevice(device *DevicePayload) (int, error) {
@@ -24,8 +23,8 @@ func (m *mockDao) GetDevice(id int) (*Device, error) {
 	return m.device, m.returnErr
 }
 
-func (m *mockDao) GetAllDevices() (*map[int]Device, error) {
-	return &m.data, m.returnErr
+func (m *mockDao) GetManyDevices(limit int, page int) ([]Device, error) {
+	return m.data, m.returnErr
 }
 
 func Test_AddDevice_CorrectDevice_ServiceSavesNewDevice(t *testing.T) {
@@ -113,74 +112,21 @@ func Test_GetDevice_GivenIdThatDoesntExist_ServiceReturnsNil(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func Test_GetAllDevices_GivenEmptyMap_ServiceReturnsMap(t *testing.T) {
-	out := NewService(&mockDao{data: make(map[int]Device)})
+func Test_GetManyDevices_GivenList_ServiceReturnsList(t *testing.T) {
+	out := NewService(&mockDao{data: []Device{{Name: "test name"}}})
 
-	devs, err := out.GetAllDevices()
+	devs, err := out.GetManyDevices(0, 0)
 
-	expected := make(map[int]Device)
-
-	assert.NoError(t, err)
-	assert.Equal(t, &expected, devs)
-}
-
-func Test_GetAllDevices_GivenMap_ServiceReturnsMap(t *testing.T) {
-	mockData := make(map[int]Device)
-	mockData[0] = Device{Name: "test name"}
-	out := NewService(&mockDao{data: mockData})
-
-	devs, err := out.GetAllDevices()
-
-	expected := make(map[int]Device)
-	expected[0] = Device{Name: "test name"}
+	expected := []Device{{Name: "test name"}}
 
 	assert.NoError(t, err)
-	assert.Equal(t, &expected, devs)
+	assert.Equal(t, expected, devs)
 }
 
-func Test_GetAllDevices_GivenDaoError_ServiceReturnsError(t *testing.T) {
+func Test_GetManyDevices_GivenDaoError_ServiceReturnsError(t *testing.T) {
 	out := NewService(&mockDao{returnErr: ErrDao("")})
 
-	_, err := out.GetDevice(1)
+	_, err := out.GetManyDevices(1, 0)
 
 	assert.Equal(t, ErrDao(""), err)
-}
-
-func Test_GetSortedDevicesList_GivenDaoError_ServiceReturnsError(t *testing.T) {
-	out := NewService(&mockDao{returnErr: ErrDao("")})
-
-	_, err := out.GetSortedDevicesList()
-
-	assert.Equal(t, ErrDao(""), err)
-}
-
-func Test_GetSortedDevicesList_GivenEmptyList_ServiceReturnsEmptyList(t *testing.T) {
-	out := NewService(&mockDao{data: make(map[int]Device)})
-
-	devs, err := out.GetSortedDevicesList()
-
-	expected := []Device{}
-
-	assert.NoError(t, err)
-	assert.Equal(t, &expected, devs)
-}
-
-func Test_GetSortedDevicesList_GivenList_ServiceReturnsSortedList(t *testing.T) {
-	ids := []int{5, 3, 0, 25, 8}
-	mockData := make(map[int]Device)
-	for _, i := range ids {
-		mockData[i] = Device{Id: i}
-	}
-	out := NewService(&mockDao{data: mockData})
-
-	devs, err := out.GetSortedDevicesList()
-
-	sort.Ints(ids)
-	expected := []Device{}
-	for _, i := range ids {
-		expected = append(expected, Device{Id: i})
-	}
-
-	assert.NoError(t, err)
-	assert.Equal(t, &expected, devs)
 }

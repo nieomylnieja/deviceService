@@ -94,29 +94,14 @@ func (dh *DeviceHandlers) GetAllDevicesHandler(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	devices, err := dh.service.GetSortedDevicesList()
+	devices, err := dh.service.GetManyDevices(limit, page)
 	if err != nil {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if limit == 0 {
-		dh.writeObject(w, devices)
-		return
-	}
-
-	if limit*page > len(*devices) {
-		dh.writeObject(w, nil)
-		return
-	}
-
-	if page*limit+limit >= len(*devices) {
-		dh.writeObject(w, (*devices)[page*limit:len(*devices)])
-		return
-	}
-
-	dh.writeObject(w, (*devices)[page*limit:page*limit+limit])
+	dh.writeObject(w, devices)
 
 }
 

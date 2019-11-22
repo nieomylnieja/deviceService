@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
-	"sort"
 )
 
 type DevicePayload struct {
@@ -15,13 +14,12 @@ type DevicePayload struct {
 type DeviceDao interface {
 	AddDevice(device *DevicePayload) (int, error)
 	GetDevice(id int) (*Device, error)
-	GetAllDevices() (*map[int]Device, error)
+	GetManyDevices(limit int, page int) ([]Device, error)
 }
 
 type Service struct {
-	Dao         DeviceDao
-	validator   *validator.Validate
-	indexHolder []int
+	Dao       DeviceDao
+	validator *validator.Validate
 }
 
 func NewService(dao DeviceDao) *Service {
@@ -72,30 +70,10 @@ func (s *Service) GetDevice(id int) (*Device, error) {
 	return device, nil
 }
 
-func (s *Service) GetAllDevices() (*map[int]Device, error) {
-	devices, err := s.Dao.GetAllDevices()
+func (s *Service) GetManyDevices(limit int, page int) ([]Device, error) {
+	devices, err := s.Dao.GetManyDevices(limit, page)
 	if err != nil {
 		return nil, err
 	}
 	return devices, nil
-}
-
-func (s *Service) GetSortedDevicesList() (*[]Device, error) {
-	devices, err := s.GetAllDevices()
-	if err != nil {
-		return nil, err
-	}
-
-	var keys []int
-	for k := range *devices {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-
-	sortedDevicesList := []Device{} // I think I ought to initialize it so that JSON can actually return and empty list
-	for _, k := range keys {
-		sortedDevicesList = append(sortedDevicesList, (*devices)[k])
-	}
-
-	return &sortedDevicesList, nil
 }

@@ -132,7 +132,7 @@ func Test_GetDeviceHandler_GivenCorrectId_HandlerReturnsDeviceObject(t *testing.
 	assert.Equal(t, expected, result)
 }
 
-func Test_GetManyDevicesHandler_GivenWrongInput_HandlerReturns400(t *testing.T) {
+func Test_PageAndLimitWrapper_GivenWrongInput_HandlerReturns400(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)
 
@@ -151,7 +151,7 @@ func Test_GetManyDevicesHandler_GivenWrongInput_HandlerReturns400(t *testing.T) 
 	}
 }
 
-func Test_GetManyDevicesHandler_NoParams_HandlerDefaultsLimitAndPage(t *testing.T) {
+func Test_PageAndLimitWrapper_NoParams_HandlerDefaultsLimitAndPage(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)
 

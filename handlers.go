@@ -104,7 +104,7 @@ func pageAndLimitWrapper(h http.HandlerFunc) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		page, err := readIntFromQueryParameter(r.URL, "page", 100)
+		page, err := readIntFromQueryParameter(r.URL, "page", 0)
 		if err != nil {
 			fmt.Println(err.Error())
 			w.WriteHeader(http.StatusBadRequest)

@@ -32,7 +32,7 @@ func (d *Dao) GetDevice(id int) (*Device, error) {
 }
 
 func (d *Dao) GetAllDevices() ([]Device, error) {
-	var devices []Device
+	devices := []Device{}
 	for _, dev := range d.data {
 		devices = append(devices, dev)
 	}

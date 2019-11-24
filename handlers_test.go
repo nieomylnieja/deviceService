@@ -31,8 +31,10 @@ func Test_ConvertToPositiveInteger_GivenWrongInput_FuncReturnsError(t *testing.T
 	}
 
 	for name, tc := range tests {
-		_, err := convertToPositiveInteger(tc)
-		assert.Error(t, err, name)
+		t.Run(name, func(t *testing.T) {
+			_, err := convertToPositiveInteger(tc)
+			assert.Error(t, err)
+		})
 	}
 }
 
@@ -43,11 +45,13 @@ func Test_ConvertToPositiveInteger_GivenCorrectInput_FuncReturnsPositiveInt(t *t
 	}
 
 	for name, tc := range tests {
-		actual, err := convertToPositiveInteger(tc)
+		t.Run(name, func(t *testing.T) {
+			actual, err := convertToPositiveInteger(tc)
 
-		assert.NoError(t, err, name)
-		assert.IsType(t, 1, actual, name)
-		assert.GreaterOrEqual(t, actual, 0, name)
+			assert.NoError(t, err)
+			assert.IsType(t, 1, actual)
+			assert.GreaterOrEqual(t, actual, 0)
+		})
 	}
 }
 
@@ -144,10 +148,12 @@ func Test_PageAndLimitWrapper_GivenWrongInput_HandlerReturns400(t *testing.T) {
 		"page is below zero":             "/devices?page=-1",
 	}
 	for name, tc := range tests {
-		resp, err := http.Get(mockServer.URL + tc)
+		t.Run(name, func(t *testing.T) {
+			resp, err := http.Get(mockServer.URL + tc)
 
-		assert.NoError(t, err, name)
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode, name)
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		})
 	}
 }
 

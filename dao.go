@@ -40,17 +40,7 @@ func (d *Dao) GetAllDevices() ([]Device, error) {
 }
 
 func (d *Dao) GetManyDevices(limit int, page int) ([]Device, error) {
-	if limit == 0 {
-		return d.GetAllDevices()
-	}
-	lower := limit * page
-	if len(d.data) < lower {
-		lower = len(d.data)
-	}
-	upper := lower + limit
-	if len(d.data) < upper {
-		upper = len(d.data)
-	}
+	lower, upper := setPageBounds(limit, page, len(d.data))
 	devices, err := d.GetAllDevices()
 	return devices[lower:upper], err
 }

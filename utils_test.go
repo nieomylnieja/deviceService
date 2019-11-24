@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"testing"
 )
 
@@ -33,4 +34,45 @@ func Test_SetPageBounds(t *testing.T) {
 			assert.Equal(t, tc.expected["upper"], acutalUpper)
 		})
 	}
+}
+
+func Test_ConvertToPositiveInteger_GivenWrongInput_FuncReturnsError(t *testing.T) {
+	tests := map[string]string{
+		"char":            "a",
+		"negative number": "-2",
+		"float":           "0.0",
+		"interface":       "{}",
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, err := convertToPositiveInteger(tc)
+			assert.Error(t, err)
+		})
+	}
+}
+
+func Test_ConvertToPositiveInteger_GivenCorrectInput_FuncReturnsPositiveInt(t *testing.T) {
+	tests := map[string]string{
+		"zero":              "0",
+		"non zero positive": "14",
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			actual, err := convertToPositiveInteger(tc)
+
+			assert.NoError(t, err)
+			assert.IsType(t, 1, actual)
+			assert.GreaterOrEqual(t, actual, 0)
+		})
+	}
+}
+
+func Test_ReadIntFromQueryParameter_GivenNoValueInParam_FuncReturnsDefault(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	result, err := readIntFromQueryParameter(req.URL, "limit", 100)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 100, result)
 }

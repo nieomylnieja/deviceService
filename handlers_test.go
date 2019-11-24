@@ -22,39 +22,6 @@ func Test_WriteObject_GivenAnObject_FuncWritesMarshalledObject(t *testing.T) {
 	assert.Equal(t, Device{Id: 1}, actual)
 }
 
-func Test_ConvertToPositiveInteger_GivenWrongInput_FuncReturnsError(t *testing.T) {
-	tests := map[string]string{
-		"char":            "a",
-		"negative number": "-2",
-		"float":           "0.0",
-		"interface":       "{}",
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			_, err := convertToPositiveInteger(tc)
-			assert.Error(t, err)
-		})
-	}
-}
-
-func Test_ConvertToPositiveInteger_GivenCorrectInput_FuncReturnsPositiveInt(t *testing.T) {
-	tests := map[string]string{
-		"zero":              "0",
-		"non zero positive": "14",
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			actual, err := convertToPositiveInteger(tc)
-
-			assert.NoError(t, err)
-			assert.IsType(t, 1, actual)
-			assert.GreaterOrEqual(t, actual, 0)
-		})
-	}
-}
-
 func Test_AddDeviceHandler_GivenInvalidDevicePayload_HandlerReturns400(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)

@@ -130,31 +130,3 @@ func Test_GetManyDevices_GivenDaoError_ServiceReturnsError(t *testing.T) {
 
 	assert.Equal(t, ErrDao(""), err)
 }
-
-func Test_GetManyDevices_GivenLimitAndPage_ServiceReturnsCorrectAmmountOfDevices(t *testing.T) {
-	t.Skip()
-	var mockData []Device
-	for i := 0; i < 5; i++ {
-		mockData = append(mockData, Device{Name: "test"})
-	}
-
-	out := NewService(&mockDao{data: mockData})
-
-	tests := map[string]struct {
-		expected    []Device
-		limit, page int
-	}{
-		"zero limit":        {expected: mockData, limit: 0, page: 0},
-		"limit 2 page 1":    {expected: mockData[:2], limit: 2, page: 1},
-		"limit 2 page 2":    {expected: mockData[:2], limit: 2, page: 2},
-		"limit 4 page 1":    {expected: mockData[:1], limit: 4, page: 1},
-		"zero limit page 3": {expected: []Device{}, limit: 0, page: 3},
-	}
-
-	for name, tc := range tests {
-		actual, err := out.GetManyDevices(tc.limit, tc.page)
-
-		assert.NoError(t, err, name)
-		assert.Equal(t, tc.expected, actual, name)
-	}
-}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
@@ -100,31 +101,17 @@ func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, object interface{})
 
 func pageAndLimitWrapper(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		var limit, page int
-
-		limitStr := r.URL.Query().Get("limit")
-		if limitStr == "" {
-			limit = 100
-		} else {
-			limit, err = convertToPositiveInteger(limitStr)
-			if err != nil {
-				fmt.Println(err.Error())
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		limit, err := readIntFromQueryParameter(r.URL, "limit", 100)
+		if err != nil {
+			fmt.Println(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
-
-		pageStr := r.URL.Query().Get("page")
-		if pageStr == "" {
-			page = 0
-		} else {
-			page, err = convertToPositiveInteger(pageStr)
-			if err != nil {
-				fmt.Println(err.Error())
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
+		page, err := readIntFromQueryParameter(r.URL, "page", 100)
+		if err != nil {
+			fmt.Println(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		for key, val := range map[string]int{"limit": limit, "page": page} {
@@ -133,6 +120,14 @@ func pageAndLimitWrapper(h http.HandlerFunc) http.HandlerFunc {
 
 		h.ServeHTTP(w, r)
 	}
+}
+
+func readIntFromQueryParameter(url *url.URL, param string, defaultValue int) (int, error) {
+	valueStr := url.Query().Get(param)
+	if valueStr == "" {
+		return defaultValue, nil
+	}
+	return convertToPositiveInteger(valueStr)
 }
 
 func convertToPositiveInteger(s string) (int, error) {

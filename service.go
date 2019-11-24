@@ -63,17 +63,9 @@ func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
 }
 
 func (s *Service) GetDevice(id int) (*Device, error) {
-	device, err := s.Dao.GetDevice(id)
-	if err != nil {
-		return nil, err
-	}
-	return device, nil
+	return s.Dao.GetDevice(id)
 }
 
 func (s *Service) GetManyDevices(limit int, page int) ([]Device, error) {
-	devices, err := s.Dao.GetManyDevices(limit, page)
-	if err != nil {
-		return nil, err
-	}
-	return devices, nil
+	return s.Dao.GetManyDevices(limit, page)
 }

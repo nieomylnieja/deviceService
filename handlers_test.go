@@ -171,39 +171,6 @@ func Test_GetManyDevicesHandler_GivenDaoError_HandlerReturns500(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 
-func Test_GetManyDevicesHandler_GivenLimitAndPage_HandlerReturnsCorrectNumberOfDevicesPerPage(t *testing.T) {
-	t.Skip()
-	var mockData []Device
-	for i := 0; i < 5; i++ {
-		mockData = append(mockData, Device{Name: "test"})
-	}
-
-	r := newRouter(NewService(&mockDao{data: mockData}))
-	mockServer := httptest.NewServer(r)
-
-	tests := map[string]struct {
-		expected []Device
-		url      string
-	}{
-		"zero limit":        {expected: mockData, url: "/devices?limit=0"},
-		"limit 2 page 1":    {expected: mockData[:2], url: "/devices?limit=2&page=1"},
-		"limit 2 page 2":    {expected: mockData[:2], url: "/devices?limit=2&page=2"},
-		"limit 4 page 1":    {expected: mockData[:1], url: "/devices?limit=4&page=1"},
-		"zero limit page 3": {expected: []Device{}, url: "/devices?page=3"},
-	}
-
-	for name, tc := range tests {
-		resp, err := http.Get(mockServer.URL + tc.url)
-		assert.NoError(t, err, name)
-
-		var result []Device
-		err = json.NewDecoder(resp.Body).Decode(&result)
-
-		assert.NoError(t, err, name)
-		assert.Equal(t, tc.expected, result, name)
-	}
-}
-
 func Test_GetManyDevicesHandler_GivenPageThatHasNoDevicesToShow_HandlerReturnsEmptyJsonArray(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)

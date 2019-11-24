@@ -31,43 +31,26 @@ func (d *Dao) GetDevice(id int) (*Device, error) {
 	return nil, nil
 }
 
-func (d *Dao) GetManyDevices(limit int, page int) ([]Device, error) {
-	i := 0
-	if limit == 0 {
-		devices := make([]Device, 0, d.indexer)
-		for _, dev := range d.data {
-			if i >= d.indexer {
-				break
-			}
-			devices = append(devices, dev)
-			i++
-		}
-		return devices, nil
-	}
-
-	if limit*page > d.indexer {
-		return []Device{}, nil
-	}
-
-	if page*limit+limit >= d.indexer {
-		devices := make([]Device, 0, d.indexer%limit)
-		for _, dev := range d.data {
-			if i >= d.indexer%limit {
-				break
-			}
-			devices = append(devices, dev)
-			i++
-		}
-		return devices, nil
-	}
-
-	devices := make([]Device, 0, limit)
+func (d *Dao) GetAllDevices() ([]Device, error) {
+	var devices []Device
 	for _, dev := range d.data {
-		if i >= limit {
-			break
-		}
 		devices = append(devices, dev)
-		i++
 	}
 	return devices, nil
+}
+
+func (d *Dao) GetManyDevices(limit int, page int) ([]Device, error) {
+	if limit == 0 {
+		return d.GetAllDevices()
+	}
+	lower := limit * page
+	if len(d.data) < lower {
+		lower = len(d.data)
+	}
+	upper := lower + limit
+	if len(d.data) < upper {
+		upper = len(d.data)
+	}
+	devices, err := d.GetAllDevices()
+	return devices[lower:upper], err
 }

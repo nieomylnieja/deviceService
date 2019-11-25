@@ -69,7 +69,7 @@ func (dh *DeviceHandlers) GetPaginatedDevices(w http.ResponseWriter, r *http.Req
 	limit := r.Context().Value("limit").(int)
 	page := r.Context().Value("page").(int)
 
-	devices, err := dh.service.GetManyDevices(limit, page)
+	devices, err := dh.service.GetPaginatedDevices(limit, page)
 	if err != nil {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -80,17 +80,26 @@ func (dh *DeviceHandlers) GetPaginatedDevices(w http.ResponseWriter, r *http.Req
 
 }
 
+func (dh *DeviceHandlers) StartTickerService(w http.ResponseWriter, r *http.Request) {
+	err := dh.service.StartTickerService()
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
 func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, object interface{}) {
 	respBody, err := json.Marshal(object)
 	if err != nil {
-		fmt.Printf("handlerError: %v", err)
+		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	_, err = w.Write(respBody)
 	if err != nil {
-		fmt.Printf("handlerError: %v", err)
+		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

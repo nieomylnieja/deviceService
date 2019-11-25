@@ -76,14 +76,18 @@ func (s *Service) StartTickerService() error {
 	if err != nil {
 		return err
 	}
+
 	mch := make(chan Measurement)
-	quit := make(chan bool)
-	defer close(quit)
+	stopDevice := make(chan bool)
+	defer close(stopDevice)
 	defer close(mch)
+
 	go s.MeasurementsWriter(mch)
+
 	for i := range devices {
-		go devices[i].deviceTicker(mch, quit)
+		go devices[i].deviceTicker(mch, stopDevice)
 	}
+
 	select {}
 }
 

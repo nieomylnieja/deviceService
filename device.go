@@ -16,12 +16,12 @@ type Measurement struct {
 	Value float64
 }
 
-func (d *Device) deviceTicker(mch chan Measurement, quit chan bool) {
+func (d *Device) deviceTicker(mch chan Measurement, stop chan bool) {
 	ticker := time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
 
 	for {
 		select {
-		case <-quit:
+		case <-stop:
 			return
 		case <-ticker.C:
 			mch <- Measurement{

@@ -30,3 +30,17 @@ func (d *Dao) GetDevice(id int) (*Device, error) {
 	}
 	return nil, nil
 }
+
+func (d *Dao) GetAllDevices() ([]Device, error) {
+	devices := []Device{}
+	for _, dev := range d.data {
+		devices = append(devices, dev)
+	}
+	return devices, nil
+}
+
+func (d *Dao) GetManyDevices(limit int, page int) ([]Device, error) {
+	lower, upper := setPageBounds(limit, page, len(d.data))
+	devices, err := d.GetAllDevices()
+	return devices[lower:upper], err
+}

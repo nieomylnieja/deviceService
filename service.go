@@ -14,6 +14,7 @@ type DevicePayload struct {
 type DeviceDao interface {
 	AddDevice(device *DevicePayload) (int, error)
 	GetDevice(id int) (*Device, error)
+	GetManyDevices(limit int, page int) ([]Device, error)
 }
 
 type Service struct {
@@ -62,9 +63,9 @@ func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
 }
 
 func (s *Service) GetDevice(id int) (*Device, error) {
-	device, err := s.Dao.GetDevice(id)
-	if err != nil {
-		return nil, err
-	}
-	return device, nil
+	return s.Dao.GetDevice(id)
+}
+
+func (s *Service) GetManyDevices(limit int, page int) ([]Device, error) {
+	return s.Dao.GetManyDevices(limit, page)
 }

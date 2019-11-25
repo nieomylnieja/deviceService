@@ -22,7 +22,7 @@ func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)
 
-	resp, err := http.Get(mockServer.URL + "/devices")
+	resp, err := http.Post(mockServer.URL+"/devices/2", "", nil)
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)

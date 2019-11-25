@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
-	"strconv"
 )
 
 type DeviceHandlers struct {
@@ -37,15 +37,15 @@ func (dh *DeviceHandlers) AddDeviceHandler(w http.ResponseWriter, r *http.Reques
 
 	dh.writeObject(w, device)
 
-	return
 }
 
 func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	input := mux.Vars(r)["id"]
-	id, err := strconv.Atoi(input)
+
+	id, err := convertToPositiveInteger(input)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -63,11 +63,25 @@ func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Reques
 
 	dh.writeObject(w, device)
 
-	return
 }
 
-func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, device *Device) {
-	respBody, err := json.Marshal(device)
+func (dh *DeviceHandlers) GetPaginatedDevices(w http.ResponseWriter, r *http.Request) {
+	limit := r.Context().Value("limit").(int)
+	page := r.Context().Value("page").(int)
+
+	devices, err := dh.service.GetManyDevices(limit, page)
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	dh.writeObject(w, devices)
+
+}
+
+func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, object interface{}) {
+	respBody, err := json.Marshal(object)
 	if err != nil {
 		fmt.Printf("handlerError: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -79,5 +93,26 @@ func (dh *DeviceHandlers) writeObject(w http.ResponseWriter, device *Device) {
 		fmt.Printf("handlerError: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+}
+
+func pageAndLimitWrapper(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		limit, err := readIntFromQueryParameter(r.URL, "limit", 100)
+		if err != nil {
+			fmt.Println(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		page, err := readIntFromQueryParameter(r.URL, "page", 0)
+		if err != nil {
+			fmt.Println(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "limit", limit)
+		ctx = context.WithValue(ctx, "page", page)
+
+		h.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

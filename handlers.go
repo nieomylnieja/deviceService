@@ -65,7 +65,7 @@ func (dh *DeviceHandlers) GetDeviceHandler(w http.ResponseWriter, r *http.Reques
 
 }
 
-func (dh *DeviceHandlers) GetManyDevicesHandler(w http.ResponseWriter, r *http.Request) {
+func (dh *DeviceHandlers) GetPaginatedDevices(w http.ResponseWriter, r *http.Request) {
 	limit := r.Context().Value("limit").(int)
 	page := r.Context().Value("page").(int)
 
@@ -110,11 +110,9 @@ func pageAndLimitWrapper(h http.HandlerFunc) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		ctx := context.WithValue(r.Context(), "limit", limit)
+		ctx = context.WithValue(ctx, "page", page)
 
-		for key, val := range map[string]int{"limit": limit, "page": page} {
-			r = r.WithContext(context.WithValue(r.Context(), key, val))
-		}
-
-		h.ServeHTTP(w, r)
+		h.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

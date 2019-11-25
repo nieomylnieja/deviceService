@@ -134,7 +134,7 @@ func Test_PageAndLimitWrapper_NoParams_HandlerDefaultsLimitAndPage(t *testing.T)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
-func Test_GetManyDevicesHandler_GivenDaoError_HandlerReturns500(t *testing.T) {
+func Test_GetPaginatedDevicesHandler_GivenDaoError_HandlerReturns500(t *testing.T) {
 	r := newRouter(NewService(&mockDao{returnErr: ErrDao("")}))
 	mockServer := httptest.NewServer(r)
 
@@ -144,7 +144,7 @@ func Test_GetManyDevicesHandler_GivenDaoError_HandlerReturns500(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 
-func Test_GetManyDevicesHandler_GivenPageThatHasNoDevicesToShow_HandlerReturnsEmptyJsonArray(t *testing.T) {
+func Test_GetPaginatedDevicesHandler_GivenPageThatHasNoDevicesToShow_HandlerReturnsEmptyJsonArray(t *testing.T) {
 	r := newRouter(NewService(&mockDao{}))
 	mockServer := httptest.NewServer(r)
 
@@ -156,4 +156,14 @@ func Test_GetManyDevicesHandler_GivenPageThatHasNoDevicesToShow_HandlerReturnsEm
 
 	assert.NoError(t, err)
 	assert.Equal(t, []int(nil), result)
+}
+
+func Test_StartTickerServiceHandler_GivenDaoError_HandlerReturns500(t *testing.T) {
+	r := newRouter(NewService(&mockDao{returnErr: ErrDao("")}))
+	mockServer := httptest.NewServer(r)
+
+	resp, err := http.Post(mockServer.URL+"/start", "", nil)
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }

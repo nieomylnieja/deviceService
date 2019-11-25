@@ -7,14 +7,15 @@ import (
 
 type DevicePayload struct {
 	Name     string  `json:"name" validate:"required,min=2,max=30"`
-	Interval int     `json:"interval" validate:"gt=0,numeric"`
-	Value    float64 `json:"value" validate:"numeric"`
+	Interval int     `json:"interval,string" validate:"gt=0,numeric"`
+	Value    float64 `json:"value,string" validate:"numeric"`
 }
 
 type DeviceDao interface {
 	AddDevice(device *DevicePayload) (int, error)
 	GetDevice(id int) (*Device, error)
-	GetManyDevices(limit int, page int) ([]Device, error)
+	GetPaginatedDevices(limit int, page int) ([]Device, error)
+	GetAllDevices() ([]Device, error)
 }
 
 type Service struct {
@@ -66,6 +67,28 @@ func (s *Service) GetDevice(id int) (*Device, error) {
 	return s.Dao.GetDevice(id)
 }
 
-func (s *Service) GetManyDevices(limit int, page int) ([]Device, error) {
-	return s.Dao.GetManyDevices(limit, page)
+func (s *Service) GetPaginatedDevices(limit int, page int) ([]Device, error) {
+	return s.Dao.GetPaginatedDevices(limit, page)
+}
+
+func (s *Service) StartTickerService() error {
+	devices, err := s.Dao.GetAllDevices()
+	if err != nil {
+		return err
+	}
+	mch := make(chan Measurement)
+	quit := make(chan bool)
+	defer close(quit)
+	defer close(mch)
+	go s.MeasurementsWriter(mch)
+	for i := range devices {
+		go devices[i].deviceTicker(mch, quit)
+	}
+	select {}
+}
+
+func (s *Service) MeasurementsWriter(mch chan Measurement) {
+	for m := range mch {
+		fmt.Printf("ID:%d -- %f\n", m.Id, m.Value)
+	}
 }

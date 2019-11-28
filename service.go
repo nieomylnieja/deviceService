@@ -64,9 +64,5 @@ func (s *Service) GetPaginatedDevices(limit, page int) ([]Device, error) {
 }
 
 func (s *Service) GetAllDevices() ([]Device, error) {
-	devices, err := s.Dao.GetAllDevices()
-	if err != nil {
-		return nil, err
-	}
-	return devices, nil
+	return s.Dao.GetAllDevices()
 }

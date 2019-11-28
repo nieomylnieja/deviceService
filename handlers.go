@@ -6,18 +6,15 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
-	"sync"
 )
 
 type HandlersEnvironment struct {
 	controller *Controller
-	startOnce  sync.Once
 }
 
-func NewHandlersEnvironment(controller *Controller) HandlersEnvironment {
-	return HandlersEnvironment{
+func NewHandlersEnvironment(controller *Controller) *HandlersEnvironment {
+	return &HandlersEnvironment{
 		controller: controller,
-		startOnce:  sync.Once{},
 	}
 }
 
@@ -84,13 +81,11 @@ func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *htt
 }
 
 func (he *HandlersEnvironment) StartTickerService(w http.ResponseWriter, r *http.Request) {
-	he.startOnce.Do(func() {
-		err := he.controller.StartTickerService()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
+	err := he.controller.StartTickerService()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (he *HandlersEnvironment) writeObject(w http.ResponseWriter, object interface{}) {

@@ -4,10 +4,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func newRouter(s *Service) *mux.Router {
+func newRouter(c *Controller) *mux.Router {
 	router := mux.NewRouter()
 
-	handlersEnvironment := NewHandlersEnvironment(s)
+	handlersEnvironment := NewHandlersEnvironment(c)
 	router.HandleFunc("/start", handlersEnvironment.StartTickerService).Methods("POST")
 	router.HandleFunc("/devices", handlersEnvironment.AddDeviceHandler).Methods("POST")
 	router.HandleFunc("/devices", pageAndLimitWrapper(handlersEnvironment.GetPaginatedDevices)).Methods("GET")

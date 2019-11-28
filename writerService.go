@@ -2,16 +2,9 @@ package main
 
 import (
 	"fmt"
-	"sync"
 )
 
-type MeasurementsWriterService struct {
-	once sync.Once
-}
-
-type WriterService interface {
-	Start(publish <-chan Measurement)
-}
+type MeasurementsWriterService struct{}
 
 func (m MeasurementsWriterService) Start(publish <-chan Measurement) {
 	go func() {

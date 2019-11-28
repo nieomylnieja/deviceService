@@ -10,14 +10,14 @@ import (
 )
 
 type HandlersEnvironment struct {
-	service   *Service
-	startOnce sync.Once
+	controller *Controller
+	startOnce  sync.Once
 }
 
-func NewHandlersEnvironment(s *Service) HandlersEnvironment {
+func NewHandlersEnvironment(controller *Controller) HandlersEnvironment {
 	return HandlersEnvironment{
-		service:   s,
-		startOnce: sync.Once{},
+		controller: controller,
+		startOnce:  sync.Once{},
 	}
 }
 
@@ -30,7 +30,7 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	device, err := he.service.AddDevice(&devPayload)
+	device, err := he.controller.AddDevice(&devPayload)
 	if err != nil {
 		switch err.(type) {
 		case ErrValidation:
@@ -54,7 +54,7 @@ func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	device, err := he.service.GetDevice(id)
+	device, err := he.controller.GetDevice(id)
 	if device == nil && err == nil {
 		fmt.Println("device was not found")
 		w.WriteHeader(http.StatusNotFound)
@@ -73,7 +73,7 @@ func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *htt
 	limit := r.Context().Value("limit").(int)
 	page := r.Context().Value("page").(int)
 
-	devices, err := he.service.GetPaginatedDevices(limit, page)
+	devices, err := he.controller.GetPaginatedDevices(limit, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,7 +85,7 @@ func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *htt
 
 func (he *HandlersEnvironment) StartTickerService(w http.ResponseWriter, r *http.Request) {
 	he.startOnce.Do(func() {
-		err := he.service.StartTickerService()
+		err := he.controller.StartTickerService()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

@@ -134,13 +134,3 @@ func Test_GetPaginatedDevices_GivenDaoError_ServiceReturnsError(t *testing.T) {
 
 	assert.Equal(t, ErrDao(""), err)
 }
-
-func Test_StartTickerService_GivenDaoError_ServiceReturnsError(t *testing.T) {
-	out := NewService(&mockDao{returnErr: ErrDao("")})
-	errChan := make(chan error)
-	defer close(errChan)
-
-	err := out.StartTickerService()
-
-	assert.Equal(t, ErrDao(""), err)
-}

@@ -46,7 +46,7 @@ func (d *Dao) GetAllDevices() ([]Device, error) {
 	return devices, nil
 }
 
-func (d *Dao) GetPaginatedDevices(limit int, page int) ([]Device, error) {
+func (d *Dao) GetPaginatedDevices(limit, page int) ([]Device, error) {
 	lower, upper := setPageBounds(limit, page, len(d.data))
 	devices, err := d.GetAllDevices()
 	return devices[lower:upper], err

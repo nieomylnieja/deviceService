@@ -23,7 +23,7 @@ func Test_WriteObject_GivenAnObject_FuncWritesMarshalledObject(t *testing.T) {
 }
 
 func Test_AddDeviceHandler_GivenInvalidDevicePayload_HandlerReturns400(t *testing.T) {
-	r := newRouter(NewService(&mockDao{}))
+	r := newRouter(NewController(NewService(&mockDao{})))
 	mockServer := httptest.NewServer(r)
 
 	requestBody := bytes.NewBuffer([]byte(`{"name": "test", "interval": -1}`))
@@ -33,7 +33,7 @@ func Test_AddDeviceHandler_GivenInvalidDevicePayload_HandlerReturns400(t *testin
 }
 
 func Test_AddDeviceHandler_GivenDevicePayload_HandlerReturnsDeviceObjectAndPerformsAddDevice(t *testing.T) {
-	r := newRouter(NewService(&mockDao{}))
+	r := newRouter(NewController(NewService(&mockDao{})))
 	mockServer := httptest.NewServer(r)
 
 	dp := DevicePayload{Name: "test name", Interval: 2}
@@ -58,7 +58,7 @@ func Test_AddDeviceHandler_GivenDevicePayload_HandlerReturnsDeviceObjectAndPerfo
 }
 
 func Test_GetDeviceHandler_GivenNonNumericId_HandlerReturnsError400(t *testing.T) {
-	r := newRouter(NewService(&mockDao{}))
+	r := newRouter(NewController(NewService(&mockDao{})))
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/devices/test")
@@ -68,7 +68,7 @@ func Test_GetDeviceHandler_GivenNonNumericId_HandlerReturnsError400(t *testing.T
 }
 
 func Test_GetDeviceHandler_GivenNonExistingId_HandlerReturnsError404(t *testing.T) {
-	r := newRouter(NewService(&mockDao{device: nil}))
+	r := newRouter(NewController(NewService(&mockDao{device: nil})))
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/devices/123")
@@ -78,7 +78,7 @@ func Test_GetDeviceHandler_GivenNonExistingId_HandlerReturnsError404(t *testing.
 }
 
 func Test_GetDeviceHandler_GivenErrorInDao_HandlerReturnsError500(t *testing.T) {
-	r := newRouter(NewService(&mockDao{returnErr: ErrDao("")}))
+	r := newRouter(NewController(NewService(&mockDao{returnErr: ErrDao("")})))
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/devices/1")
@@ -88,7 +88,7 @@ func Test_GetDeviceHandler_GivenErrorInDao_HandlerReturnsError500(t *testing.T) 
 }
 
 func Test_GetDeviceHandler_GivenCorrectId_HandlerReturnsDeviceObject(t *testing.T) {
-	r := newRouter(NewService(&mockDao{device: &Device{Name: "test name"}}))
+	r := newRouter(NewController(NewService(&mockDao{device: &Device{Name: "test name"}})))
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/devices/1")
@@ -104,7 +104,7 @@ func Test_GetDeviceHandler_GivenCorrectId_HandlerReturnsDeviceObject(t *testing.
 }
 
 func Test_PageAndLimitWrapper_GivenWrongInput_HandlerReturns400(t *testing.T) {
-	r := newRouter(NewService(&mockDao{}))
+	r := newRouter(NewController(NewService(&mockDao{})))
 	mockServer := httptest.NewServer(r)
 
 	tests := map[string]string{
@@ -125,7 +125,7 @@ func Test_PageAndLimitWrapper_GivenWrongInput_HandlerReturns400(t *testing.T) {
 }
 
 func Test_PageAndLimitWrapper_NoParams_HandlerDefaultsLimitAndPage(t *testing.T) {
-	r := newRouter(NewService(&mockDao{}))
+	r := newRouter(NewController(NewService(&mockDao{})))
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/devices")
@@ -135,7 +135,7 @@ func Test_PageAndLimitWrapper_NoParams_HandlerDefaultsLimitAndPage(t *testing.T)
 }
 
 func Test_GetPaginatedDevicesHandler_GivenDaoError_HandlerReturns500(t *testing.T) {
-	r := newRouter(NewService(&mockDao{returnErr: ErrDao("")}))
+	r := newRouter(NewController(NewService(&mockDao{returnErr: ErrDao("")})))
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/devices")
@@ -145,7 +145,7 @@ func Test_GetPaginatedDevicesHandler_GivenDaoError_HandlerReturns500(t *testing.
 }
 
 func Test_GetPaginatedDevicesHandler_GivenPageThatHasNoDevicesToShow_HandlerReturnsEmptyJsonArray(t *testing.T) {
-	r := newRouter(NewService(&mockDao{}))
+	r := newRouter(NewController(NewService(&mockDao{})))
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/devices?page=1")
@@ -159,7 +159,7 @@ func Test_GetPaginatedDevicesHandler_GivenPageThatHasNoDevicesToShow_HandlerRetu
 }
 
 func Test_StartTickerServiceHandler_GivenDaoError_HandlerReturns500(t *testing.T) {
-	r := newRouter(NewService(&mockDao{returnErr: ErrDao("")}))
+	r := newRouter(NewController(NewService(&mockDao{returnErr: ErrDao("")})))
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Post(mockServer.URL+"/start", "", nil)

@@ -59,23 +59,14 @@ func (s *Service) GetDevice(id int) (*Device, error) {
 	return s.Dao.GetDevice(id)
 }
 
-func (s *Service) GetPaginatedDevices(limit int, page int) ([]Device, error) {
+func (s *Service) GetPaginatedDevices(limit, page int) ([]Device, error) {
 	return s.Dao.GetPaginatedDevices(limit, page)
 }
 
-func (s *Service) StartTickerService() error {
+func (s *Service) GetAllDevices() ([]Device, error) {
 	devices, err := s.Dao.GetAllDevices()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	publish := make(chan Measurement)
-	TickerService{}.Start(devices, publish)
-	MeasurementsWriterService{}.Start(publish)
-	return nil
-}
-
-func (s *Service) MeasurementsWriter(mch chan Measurement) {
-	for m := range mch {
-		fmt.Printf("ID:%d -- %f\n", m.Id, m.Value)
-	}
+	return devices, nil
 }

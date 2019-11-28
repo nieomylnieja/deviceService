@@ -11,24 +11,16 @@ type DevicePayload struct {
 	Value    float64 `json:"value,string" validate:"numeric"`
 }
 
-type DeviceDao interface {
-	AddDevice(device *DevicePayload) (int, error)
-	GetDevice(id int) (*Device, error)
-	GetPaginatedDevices(limit int, page int) ([]Device, error)
-	GetAllDevices() ([]Device, error)
-}
-
 type Service struct {
 	Dao       DeviceDao
 	validator *validator.Validate
 }
 
 func NewService(dao DeviceDao) *Service {
-	s := Service{
+	return &Service{
 		Dao:       dao,
 		validator: validator.New(),
 	}
-	return &s
 }
 
 func (s *Service) validate(payload *DevicePayload) error {
@@ -76,19 +68,10 @@ func (s *Service) StartTickerService() error {
 	if err != nil {
 		return err
 	}
-
-	mch := make(chan Measurement)
-	stopDevice := make(chan bool)
-	defer close(stopDevice)
-	defer close(mch)
-
-	go s.MeasurementsWriter(mch)
-
-	for i := range devices {
-		go devices[i].deviceTicker(mch, stopDevice)
-	}
-
-	select {}
+	publish := make(chan Measurement)
+	TickerService{}.Start(devices, publish)
+	MeasurementsWriterService{}.Start(publish)
+	return nil
 }
 
 func (s *Service) MeasurementsWriter(mch chan Measurement) {

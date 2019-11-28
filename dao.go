@@ -6,6 +6,13 @@ type Dao struct {
 	indexer int
 }
 
+type DeviceDao interface {
+	AddDevice(device *DevicePayload) (int, error)
+	GetDevice(id int) (*Device, error)
+	GetPaginatedDevices(limit int, page int) ([]Device, error)
+	GetAllDevices() ([]Device, error)
+}
+
 func NewDao() *Dao {
 	d := Dao{data: make(map[int]Device)}
 	return &d

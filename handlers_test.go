@@ -10,7 +10,7 @@ import (
 )
 
 func Test_WriteObject_GivenAnObject_FuncWritesMarshalledObject(t *testing.T) {
-	dh := DeviceHandlers{}
+	dh := HandlersEnvironment{}
 	resp := httptest.NewRecorder()
 
 	dh.writeObject(resp, Device{Id: 1})

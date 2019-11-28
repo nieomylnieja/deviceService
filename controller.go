@@ -1,5 +1,7 @@
 package main
 
+import "os"
+
 type Controller struct {
 	mainService   *Service
 	tickerService *TickerService
@@ -9,7 +11,7 @@ type Controller struct {
 func NewController(mainService *Service) *Controller {
 	return &Controller{
 		mainService:   mainService,
-		tickerService: &TickerService{},
+		tickerService: NewTickerService(),
 		writerService: &MeasurementsWriterService{},
 	}
 }
@@ -19,10 +21,12 @@ func (c *Controller) StartTickerService() error {
 	if err != nil {
 		return err
 	}
+
 	publish := make(chan Measurement)
 	c.tickerService.Start(devices, publish)
-	c.writerService.Start(publish)
-	return nil
+	err = c.writerService.Start(publish, os.Stdout)
+
+	return err
 }
 
 func (c *Controller) GetDevice(id int) (*Device, error) {

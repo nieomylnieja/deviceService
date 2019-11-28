@@ -16,7 +16,7 @@ type Measurement struct {
 	Value float64
 }
 
-func (d *Device) deviceTicker(publish chan<- Measurement, stop chan bool) {
+func (d *Device) deviceTicker(publish chan<- Measurement, stop <-chan bool) {
 	ticker := time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
 
 	for {

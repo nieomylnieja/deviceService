@@ -6,10 +6,10 @@ import (
 )
 
 func Test_DeviceTicker_ChannelReturnsCorrectMeasurement(t *testing.T) {
-	mch := make(chan Measurement)
-	quit := make(chan bool)
-	defer close(mch)
-	defer close(quit)
+	publish := make(chan Measurement)
+	stop := make(chan bool)
+	defer close(publish)
+	defer close(stop)
 
 	expected := Measurement{
 		Id:    2,
@@ -18,9 +18,9 @@ func Test_DeviceTicker_ChannelReturnsCorrectMeasurement(t *testing.T) {
 
 	d := Device{Id: expected.Id, Value: expected.Value, Interval: 1}
 
-	go d.deviceTicker(mch, quit)
-	result := <-mch
-	quit <- true
+	go d.deviceTicker(publish, stop)
+	result := <-publish
+	stop <- true
 
 	assert.Equal(t, expected, result)
 }

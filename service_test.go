@@ -23,7 +23,11 @@ func (m *mockDao) GetDevice(id int) (*Device, error) {
 	return m.device, m.returnErr
 }
 
-func (m *mockDao) GetManyDevices(limit int, page int) ([]Device, error) {
+func (m *mockDao) GetPaginatedDevices(limit int, page int) ([]Device, error) {
+	return m.data, m.returnErr
+}
+
+func (m *mockDao) GetAllDevices() ([]Device, error) {
 	return m.data, m.returnErr
 }
 
@@ -112,10 +116,10 @@ func Test_GetDevice_GivenIdThatDoesntExist_ServiceReturnsNil(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func Test_GetManyDevices_GivenList_ServiceReturnsList(t *testing.T) {
+func Test_GetPaginatedDevices_GivenList_ServiceReturnsList(t *testing.T) {
 	out := NewService(&mockDao{data: []Device{{Name: "test name"}}})
 
-	devs, err := out.GetManyDevices(0, 0)
+	devs, err := out.GetPaginatedDevices(0, 0)
 
 	expected := []Device{{Name: "test name"}}
 
@@ -123,10 +127,18 @@ func Test_GetManyDevices_GivenList_ServiceReturnsList(t *testing.T) {
 	assert.Equal(t, expected, devs)
 }
 
-func Test_GetManyDevices_GivenDaoError_ServiceReturnsError(t *testing.T) {
+func Test_GetPaginatedDevices_GivenDaoError_ServiceReturnsError(t *testing.T) {
 	out := NewService(&mockDao{returnErr: ErrDao("")})
 
-	_, err := out.GetManyDevices(1, 0)
+	_, err := out.GetPaginatedDevices(1, 0)
 
 	assert.Equal(t, ErrDao(""), err)
+}
+
+func TestService_GetAllDevices_GivenDaoError_ServiceReturnsError(t *testing.T) {
+	out := NewService(&mockDao{returnErr: ErrDao("")})
+
+	_, err := out.GetAllDevices()
+
+	assert.Error(t, ErrDao(""), err)
 }

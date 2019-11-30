@@ -7,14 +7,8 @@ import (
 
 type DevicePayload struct {
 	Name     string  `json:"name" validate:"required,min=2,max=30"`
-	Interval int     `json:"interval" validate:"gt=0,numeric"`
-	Value    float64 `json:"value" validate:"numeric"`
-}
-
-type DeviceDao interface {
-	AddDevice(device *DevicePayload) (int, error)
-	GetDevice(id int) (*Device, error)
-	GetManyDevices(limit int, page int) ([]Device, error)
+	Interval int     `json:"interval,string" validate:"gt=0,numeric"`
+	Value    float64 `json:"value,string" validate:"numeric"`
 }
 
 type Service struct {
@@ -23,11 +17,10 @@ type Service struct {
 }
 
 func NewService(dao DeviceDao) *Service {
-	s := Service{
+	return &Service{
 		Dao:       dao,
 		validator: validator.New(),
 	}
-	return &s
 }
 
 func (s *Service) validate(payload *DevicePayload) error {
@@ -66,6 +59,10 @@ func (s *Service) GetDevice(id int) (*Device, error) {
 	return s.Dao.GetDevice(id)
 }
 
-func (s *Service) GetManyDevices(limit int, page int) ([]Device, error) {
-	return s.Dao.GetManyDevices(limit, page)
+func (s *Service) GetPaginatedDevices(limit, page int) ([]Device, error) {
+	return s.Dao.GetPaginatedDevices(limit, page)
+}
+
+func (s *Service) GetAllDevices() ([]Device, error) {
+	return s.Dao.GetAllDevices()
 }

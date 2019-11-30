@@ -19,8 +19,9 @@ func valueService(n int) float64 {
 
 func main() {
 	s := NewService(NewDao())
+	c := NewController(s)
 
-	r := newRouter(s)
+	r := newRouter(c)
 
 	http.ListenAndServe(":8000", r)
 }

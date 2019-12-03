@@ -1,28 +1,38 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	influxdb "github.com/influxdata/influxdb-client-go"
+	"github.com/influxdata/influxdb-client-go"
 	"io"
+	"net/http"
+	"os"
+	"time"
 )
 
 type MeasurementsWriterService struct{}
 
-func (m MeasurementsWriterService) Coonect() error {
-	// You can generate a Token from the "Tokens Tab" in the UI
-	influx, err := influxdb.New(http: //127.0.0.1:9999, myToken, influxdb.WithHTTPClient(myHTTPClient))
-	if err != nil {
-		panic(err) // error handling here; normally we wouldn't use fmt but it works for the example
+func (m *MeasurementsWriterService) Start(publish <-chan Measurement, w io.Writer) error {
+	myClient := http.Client{
+		Timeout: 10 * time.Second,
 	}
-	// Add your app code here
-	influx.Close() // closes the client.  After this the client is useless.
-}
 
-func (m MeasurementsWriterService) Start(publish <-chan Measurement, w io.Writer) error {
-	var err error
+	influx, err := influxdb.New(os.Getenv("INFLUX_ADDRESS"),
+		os.Getenv("INFLUX_TOKEN"), influxdb.WithHTTPClient(&myClient))
+	if err != nil {
+		return err
+	}
+	defer influx.Close()
+
 	go func() {
 		for m := range publish {
-			_, err = fmt.Fprintf(w, "ID:%d -- %f\n", m.Id, m.Value)
+			metric := influxdb.NewRowMetric(
+				map[string]interface{}{"deviceValues": m.Value},
+				"device-metrics",
+				map[string]string{"deviceId": fmt.Sprintf("%d", m.Id)},
+				time.Now())
+
+			_, err = influx.Write(context.Background(), "DeviceService", "811cf8f341a9dca8", metric)
 			if err != nil {
 				return
 			}

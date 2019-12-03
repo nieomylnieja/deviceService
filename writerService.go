@@ -1,41 +1,66 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"github.com/influxdata/influxdb-client-go"
-	"io"
-	"net/http"
+	"github.com/fatih/structs"
+	"github.com/influxdata/influxdb1-client/v2"
+	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
-type MeasurementsWriterService struct{}
+type MeasurementsWriterService struct {
+	mydb         string
+	writerClient client.Client
+}
 
-func (m *MeasurementsWriterService) Start(publish <-chan Measurement, w io.Writer) error {
-	myClient := http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	influx, err := influxdb.New(os.Getenv("INFLUX_ADDRESS"),
-		os.Getenv("INFLUX_TOKEN"), influxdb.WithHTTPClient(&myClient))
+func NewMeasurementsWriterService() *MeasurementsWriterService {
+	clt, err := client.NewHTTPClient(client.HTTPConfig{
+		Addr: os.Getenv("INFLUX_ADDRESS"),
+	})
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
-	defer influx.Close()
+	return &MeasurementsWriterService{
+		mydb:         "mydb",
+		writerClient: clt,
+	}
+}
+
+func (mws *MeasurementsWriterService) insert(batchPoints client.BatchPoints, measurement Measurement) {
+	defer mws.writerClient.Close()
+
+	point, err := client.NewPoint(
+		"deviceValues",
+		map[string]string{"deviceId": strconv.Itoa(measurement.Id)},
+		structs.Map(measurement.Value),
+		time.Now())
+	if err != nil {
+		log.Println(err)
+	}
+	batchPoints.AddPoint(point)
+	if err = mws.writerClient.Write(batchPoints); err != nil {
+		log.Println(err)
+	}
+	if err = mws.writerClient.Close(); err != nil {
+		log.Println(err)
+	}
+}
+
+func (mws *MeasurementsWriterService) Start(publish <-chan Measurement) error {
+	var err error
+
+	batchPoints, err := client.NewBatchPoints(client.BatchPointsConfig{
+		Database:  mws.mydb,
+		Precision: "s",
+	})
+	if err != nil {
+		log.Println(err)
+	}
 
 	go func() {
-		for m := range publish {
-			metric := influxdb.NewRowMetric(
-				map[string]interface{}{"deviceValues": m.Value},
-				"device-metrics",
-				map[string]string{"deviceId": fmt.Sprintf("%d", m.Id)},
-				time.Now())
-
-			_, err = influx.Write(context.Background(), "DeviceService", "811cf8f341a9dca8", metric)
-			if err != nil {
-				return
-			}
+		for measurement := range publish {
+			mws.insert(batchPoints, measurement)
 		}
 	}()
 	return err

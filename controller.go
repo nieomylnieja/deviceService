@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"sync"
 )
 
@@ -16,7 +15,7 @@ func NewController(mainService *Service) *Controller {
 	return &Controller{
 		mainService:   mainService,
 		tickerService: NewTickerService(),
-		writerService: &MeasurementsWriterService{},
+		writerService: NewMeasurementsWriterService(),
 		startOnce:     sync.Once{},
 	}
 }
@@ -40,7 +39,7 @@ func (c *Controller) startTickerService() error {
 
 	publish := make(chan Measurement)
 	c.tickerService.Start(devices, publish)
-	err = c.writerService.Start(publish, os.Stdout)
+	err = c.writerService.Start(publish)
 
 	return err
 }

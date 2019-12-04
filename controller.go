@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"sync"
 )
 
@@ -15,7 +16,7 @@ func NewController(mainService *Service) *Controller {
 	return &Controller{
 		mainService:   mainService,
 		tickerService: NewTickerService(),
-		writerService: NewMeasurementsWriterService(),
+		writerService: NewMeasurementsWriterService(os.Getenv("INFLUX_ADDRESS")),
 		startOnce:     sync.Once{},
 	}
 }

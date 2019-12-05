@@ -16,8 +16,9 @@ func NewController(mainService *Service) *Controller {
 	return &Controller{
 		mainService:   mainService,
 		tickerService: NewTickerService(),
-		writerService: &MeasurementsWriterService{},
-		startOnce:     sync.Once{},
+		writerService: NewMeasurementsWriterService(os.Getenv("INFLUX_ADDRESS"),
+			os.Getenv("INFLUX_DB_NAME")),
+		startOnce: sync.Once{},
 	}
 }
 
@@ -40,7 +41,7 @@ func (c *Controller) startTickerService() error {
 
 	publish := make(chan Measurement)
 	c.tickerService.Start(devices, publish)
-	err = c.writerService.Start(publish, os.Stdout)
+	err = c.writerService.Start(publish)
 
 	return err
 }

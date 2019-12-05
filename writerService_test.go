@@ -1,26 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
-	"github.com/stretchr/testify/assert"
+	assert2 "github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestMeasurementsWriterService_Start_OutputsCorrectStringAndCloses(t *testing.T) {
-	ws := MeasurementsWriterService{}
-	publish := make(chan Measurement)
-	measurement := Measurement{
-		Id:    1,
-		Value: 2,
-	}
-	var buf bytes.Buffer
+func TestNewMeasurementsWriterService_GivenWrongAddressServicePanics(t *testing.T) {
+	writerService := NewMeasurementsWriterService
 
-	err := ws.Start(publish, &buf)
-	publish <- measurement
-	close(publish)
-	expected := fmt.Sprintf("ID:%d -- %f\n", measurement.Id, measurement.Value)
-
-	assert.NoError(t, err)
-	assert.Equal(t, expected, buf.String())
+	assert2.Panics(t, func() { writerService("abc", "123") })
 }

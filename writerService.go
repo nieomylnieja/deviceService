@@ -12,17 +12,34 @@ type MeasurementsWriterService struct {
 	writerClient client.Client
 }
 
-func NewMeasurementsWriterService(dbAddress string) *MeasurementsWriterService {
+func NewMeasurementsWriterService(dbAddress, dbName string) *MeasurementsWriterService {
 	clt, err := client.NewHTTPClient(client.HTTPConfig{
 		Addr: dbAddress,
 	})
 	if err != nil {
-		log.Panic(err)
+		log.Panicf("could not initialize influx connection: %s", err.Error())
 	}
 	return &MeasurementsWriterService{
-		db:           "mydb",
+		db:           dbName,
 		writerClient: clt,
 	}
+}
+
+func (mws *MeasurementsWriterService) Start(publish <-chan Measurement) error {
+	defer mws.closeClient()
+
+	batchPoints, err := mws.batchPointsModel()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for measurement := range publish {
+			mws.dbWrite(batchPoints, measurement)
+		}
+	}()
+
+	return nil
 }
 
 func (mws *MeasurementsWriterService) dbWrite(batchPoints client.BatchPoints, measurement Measurement) {
@@ -32,11 +49,11 @@ func (mws *MeasurementsWriterService) dbWrite(batchPoints client.BatchPoints, me
 		map[string]interface{}{"value": measurement.Value},
 		time.Now())
 	if err != nil {
-		log.Println(err)
+		log.Printf("Could not save %+v: %s", measurement, err.Error())
 	}
 	batchPoints.AddPoint(point)
 	if err = mws.writerClient.Write(batchPoints); err != nil {
-		log.Println(err)
+		log.Printf("Could not write %+v: %s", measurement, err.Error())
 	}
 }
 
@@ -58,22 +75,5 @@ func (mws *MeasurementsWriterService) closeClient() error {
 		log.Println(err)
 		return err
 	}
-	return nil
-}
-
-func (mws *MeasurementsWriterService) Start(publish <-chan Measurement) error {
-	defer mws.closeClient()
-
-	batchPoints, err := mws.batchPointsModel()
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		for measurement := range publish {
-			mws.dbWrite(batchPoints, measurement)
-		}
-	}()
-
 	return nil
 }

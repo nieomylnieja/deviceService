@@ -16,8 +16,9 @@ func NewController(mainService *Service) *Controller {
 	return &Controller{
 		mainService:   mainService,
 		tickerService: NewTickerService(),
-		writerService: NewMeasurementsWriterService(os.Getenv("INFLUX_ADDRESS")),
-		startOnce:     sync.Once{},
+		writerService: NewMeasurementsWriterService(os.Getenv("INFLUX_ADDRESS"),
+			os.Getenv("INFLUX_DB_NAME")),
+		startOnce: sync.Once{},
 	}
 }
 

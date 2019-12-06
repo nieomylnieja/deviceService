@@ -31,14 +31,16 @@ func NewDao() *Dao {
 		log.Panicf("couldnt create client with the uri: %s :%+v", mongodbURI, err.Error())
 	}
 	collection := client.Database(os.Getenv("MONGODB_NAME")).Collection("devices")
-	return &Dao{
+	dao := &Dao{
 		mongoClient: client,
 		collection:  collection,
 		ctx:         context.Background(),
 	}
+	dao.connect()
+	return dao
 }
 
-func (db *Dao) ConnectToDB() {
+func (db *Dao) connect() {
 	err := db.mongoClient.Connect(db.ctx)
 	if err != nil {
 		log.Panicf("couldn't connect to db: %+v", err.Error())

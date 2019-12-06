@@ -6,16 +6,16 @@ import (
 	"strconv"
 )
 
-func setPageBounds(limit int, page int, len int) (lower int, upper int) {
+func setPageBounds(limit, page, length int64) (lower int64, upper int64) {
 	if limit == 0 {
-		return 0, len
+		return 0, length
 	}
 	lower = limit * page
 	upper = lower + limit
-	if len < lower {
+	if length < lower {
 		lower, upper = 0, 0
-	} else if len < upper {
-		upper = len
+	} else if length < upper {
+		upper = length
 	}
 	return lower, upper
 }

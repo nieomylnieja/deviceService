@@ -55,7 +55,7 @@ func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
 	}, nil
 }
 
-func (s *Service) GetDevice(id int) (*Device, error) {
+func (s *Service) GetDevice(id string) (*Device, error) {
 	return s.Dao.GetDevice(id)
 }
 

@@ -18,7 +18,9 @@ func valueService(n int) float64 {
 }
 
 func main() {
-	s := NewService(NewDao())
+	db := NewDao()
+	db.ConnectToDB()
+	s := NewService(db)
 	c := NewController(s)
 
 	r := newRouter(c)

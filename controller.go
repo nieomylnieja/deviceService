@@ -16,8 +16,8 @@ func NewController(mainService *Service) *Controller {
 	return &Controller{
 		mainService:   mainService,
 		tickerService: NewTickerService(),
-		writerService: NewMeasurementsWriterService(os.Getenv("INFLUX_ADDRESS"),
-			os.Getenv("INFLUX_DB_NAME")),
+		writerService: NewMeasurementsWriterService(os.Getenv("INFLUXDB_URL"),
+			os.Getenv("INFLUXDB_NAME")),
 		startOnce: sync.Once{},
 	}
 }
@@ -46,7 +46,7 @@ func (c *Controller) startTickerService() error {
 	return err
 }
 
-func (c *Controller) GetDevice(id int) (*Device, error) {
+func (c *Controller) GetDevice(id string) (*Device, error) {
 	return c.mainService.GetDevice(id)
 }
 

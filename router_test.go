@@ -9,7 +9,7 @@ import (
 )
 
 func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
-	r := newRouter(NewController(NewService(&mockDao{})))
+	r := newRouter(&Controller{mainService: NewService(&mockDao{})})
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/dcisve")
@@ -19,7 +19,7 @@ func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
 }
 
 func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
-	r := newRouter(NewController(NewService(&mockDao{})))
+	r := newRouter(&Controller{mainService: NewService(&mockDao{})})
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Post(mockServer.URL+"/devices/2", "", nil)
@@ -29,7 +29,7 @@ func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
 }
 
 func Test_GivenDaoError_RouterReturns500(t *testing.T) {
-	r := newRouter(NewController(NewService(&mockDao{returnErr: ErrDao("")})))
+	r := newRouter(&Controller{mainService: NewService(&mockDao{returnErr: ErrDao("")})})
 	mockServer := httptest.NewServer(r)
 
 	requestBody := bytes.NewBuffer([]byte(`{"name": "test"}`))

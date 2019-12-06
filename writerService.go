@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/influxdata/influxdb1-client/v2"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -45,7 +44,7 @@ func (mws *MeasurementsWriterService) Start(publish <-chan Measurement) error {
 func (mws *MeasurementsWriterService) dbWrite(batchPoints client.BatchPoints, measurement Measurement) {
 	point, err := client.NewPoint(
 		"deviceValues",
-		map[string]string{"deviceId": strconv.Itoa(measurement.Id)},
+		map[string]string{"deviceId": measurement.Id.String()},
 		map[string]interface{}{"value": measurement.Value},
 		time.Now())
 	if err != nil {

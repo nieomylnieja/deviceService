@@ -2,17 +2,19 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
 )
 
 func Test_DeviceTicker_ChannelReturnsCorrectMeasurement(t *testing.T) {
 	publish := make(chan Measurement)
 	stop := make(chan bool)
+	id := primitive.NewObjectID()
 	defer close(publish)
 	defer close(stop)
 
 	expected := Measurement{
-		Id:    2,
+		Id:    id,
 		Value: 24.34,
 	}
 

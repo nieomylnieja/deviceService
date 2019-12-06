@@ -43,13 +43,7 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 }
 
 func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
-	input := mux.Vars(r)["id"]
-
-	id, err := convertToPositiveInteger(input)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	id := mux.Vars(r)["id"]
 
 	device, err := he.controller.GetDevice(id)
 	if device == nil && err == nil {

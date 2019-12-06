@@ -7,7 +7,7 @@ import (
 
 func TestController_AddDevice_GivenDaoError_ControllerReturnsError(t *testing.T) {
 	out := NewService(&mockDao{returnErr: ErrDao("")})
-	c := NewController(out)
+	c := Controller{mainService: out}
 
 	_, err := c.AddDevice(&DevicePayload{Name: "test"})
 
@@ -16,16 +16,16 @@ func TestController_AddDevice_GivenDaoError_ControllerReturnsError(t *testing.T)
 
 func TestController_GetDevice_GivenDaoError_ControllerReturnsError(t *testing.T) {
 	out := NewService(&mockDao{returnErr: ErrDao("")})
-	c := NewController(out)
+	c := Controller{mainService: out}
 
-	_, err := c.GetDevice(0)
+	_, err := c.GetDevice("asd")
 
 	assert.Equal(t, ErrDao(""), err)
 }
 
 func TestController_GetPaginatedDevices_GivenDaoError_ControllerReturnsError(t *testing.T) {
 	out := NewService(&mockDao{returnErr: ErrDao("")})
-	c := NewController(out)
+	c := Controller{mainService: out}
 
 	_, err := c.GetPaginatedDevices(0, 2)
 
@@ -34,7 +34,7 @@ func TestController_GetPaginatedDevices_GivenDaoError_ControllerReturnsError(t *
 
 func TestController_StartTickerService_GivenDaoError_ControllerReturnsError(t *testing.T) {
 	out := NewService(&mockDao{returnErr: ErrDao("")})
-	c := NewController(out)
+	c := Controller{mainService: out}
 
 	err := c.StartTickerService()
 

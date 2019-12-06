@@ -6,18 +6,8 @@ import (
 	"strconv"
 )
 
-func setPageBounds(limit, page, length int64) (lower int64, upper int64) {
-	if limit == 0 {
-		return 0, length
-	}
-	lower = limit * page
-	upper = lower + limit
-	if length < lower {
-		lower, upper = 0, 0
-	} else if length < upper {
-		upper = length
-	}
-	return lower, upper
+func setPageBoundsToInt64(limit, page int) (lower int64, upper int64) {
+	return int64(page * limit), int64(page*limit + limit)
 }
 
 func convertToPositiveInteger(s string) (int, error) {

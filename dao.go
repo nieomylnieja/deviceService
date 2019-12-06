@@ -61,6 +61,7 @@ func (db *Dao) AddDevice(device *DevicePayload) (primitive.ObjectID, error) {
 		log.Printf("%v was not added to db: %+v", dev, err.Error())
 		return [12]byte{}, err
 	}
+
 	return result.InsertedID.(primitive.ObjectID), nil
 }
 
@@ -74,10 +75,11 @@ func (db *Dao) GetDevice(id string) (*Device, error) {
 		return nil, err
 	}
 	dev := Device{}
-	err = findResult.Decode(dev)
+	err = findResult.Decode(&dev)
 	if err != nil {
 		return nil, err
 	}
+
 	return &dev, nil
 }
 
@@ -87,22 +89,23 @@ func (db *Dao) GetAllDevices() ([]Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = cursor.All(db.ctx, allDevices)
+
+	err = cursor.All(db.ctx, &allDevices)
 	return allDevices, err
 }
 
 func (db *Dao) GetPaginatedDevices(limit, page int) ([]Device, error) {
-	count, err := db.collection.CountDocuments(db.ctx, bson.D{})
-	if err != nil {
-		return nil, err
-	}
-	lower, upper := setPageBounds(int64(limit), int64(page), count)
+	lower, upper := setPageBoundsToInt64(limit, page)
 	paginatedDevices := []Device{}
 	opts := options.FindOptions{}
-	cursor, err := db.collection.Find(db.ctx, bson.D{}, opts.SetSkip(lower), opts.SetLimit(upper))
+
+	cursor, err := db.collection.Find(db.ctx, bson.D{},
+		opts.SetSkip(lower),
+		opts.SetLimit(upper))
 	if err != nil {
 		return nil, err
 	}
-	err = cursor.All(db.ctx, paginatedDevices)
+
+	err = cursor.All(db.ctx, &paginatedDevices)
 	return paginatedDevices, err
 }

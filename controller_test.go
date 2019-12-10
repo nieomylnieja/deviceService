@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
 )
 
@@ -19,7 +20,7 @@ func TestController_GetDevice_GivenDaoError_ControllerReturnsError(t *testing.T)
 	out := NewService(&mockDao{returnErr: ErrDao("")})
 	c := Controller{mainService: out}
 
-	_, err := c.GetDevice("asd", context.TODO())
+	_, err := c.GetDevice(primitive.NewObjectID().Hex(), context.TODO())
 
 	assert.Equal(t, ErrDao(""), err)
 }

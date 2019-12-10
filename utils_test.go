@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"testing"
 )
@@ -73,4 +74,18 @@ func Test_ReadIntFromQueryParameter_GivenNoValueInParam_FuncReturnsDefault(t *te
 
 	assert.NoError(t, err)
 	assert.Equal(t, 100, result)
+}
+
+func Test_StringIDToObjectID_GivenInvalidId_ServiceReturnsError(t *testing.T) {
+	_, err := stringIDToObjectID("a")
+
+	assert.Error(t, err)
+}
+
+func Test_StringIDToObjectID_GivenValidId_ServiceReturnsObjectID(t *testing.T) {
+	id := primitive.NewObjectID()
+	objectID, err := stringIDToObjectID(id.Hex())
+
+	assert.NoError(t, err)
+	assert.Equal(t, id, objectID)
 }

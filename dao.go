@@ -22,7 +22,7 @@ type Dao struct {
 
 type DeviceDao interface {
 	AddDevice(device *DevicePayload, ctx context.Context) (primitive.ObjectID, error)
-	GetDevice(id string, ctx context.Context) (*Device, error)
+	GetDevice(id primitive.ObjectID, ctx context.Context) (*Device, error)
 	GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error)
 	GetAllDevices(ctx context.Context) ([]Device, error)
 }
@@ -73,21 +73,15 @@ func (db *Dao) AddDevice(device *DevicePayload, ctx context.Context) (primitive.
 	return result.InsertedID.(primitive.ObjectID), nil
 }
 
-func (db *Dao) GetDevice(id string, ctx context.Context) (*Device, error) {
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-	findResult := db.collection.FindOne(ctx, bson.M{"_id": objID})
+func (db *Dao) GetDevice(id primitive.ObjectID, ctx context.Context) (*Device, error) {
+	findResult := db.collection.FindOne(ctx, bson.M{"_id": id})
 	if err := findResult.Err(); err != nil {
 		return nil, err
 	}
 	var dev *Device
-	err = findResult.Decode(dev)
-	if err != nil {
+	if err := findResult.Decode(dev); err != nil {
 		return nil, err
 	}
-
 	return dev, nil
 }
 

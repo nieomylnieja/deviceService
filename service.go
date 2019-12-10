@@ -24,23 +24,11 @@ func NewService(dao DeviceDao) *Service {
 	}
 }
 
-func (s *Service) validate(payload *DevicePayload) error {
-	validationErrors := s.validator.Struct(payload)
-	if validationErrors != nil {
-		for _, err := range validationErrors.(validator.ValidationErrors) {
-			fmt.Println(err)
-		}
-		return ErrValidation("")
-	}
-	return nil
-}
-
 func (s *Service) AddDevice(payload *DevicePayload, ctx context.Context) (*Device, error) {
 	if payload.Interval == 0 {
 		payload.Interval = 1000
 	}
-	err := s.validate(payload)
-	if err != nil {
+	if err := s.validateDevicePayload(payload); err != nil {
 		return nil, err
 	}
 	id, err := s.Dao.AddDevice(payload, ctx)
@@ -57,7 +45,11 @@ func (s *Service) AddDevice(payload *DevicePayload, ctx context.Context) (*Devic
 }
 
 func (s *Service) GetDevice(id string, ctx context.Context) (*Device, error) {
-	return s.Dao.GetDevice(id, ctx)
+	objectID, err := stringIDToObjectID(id)
+	if err != nil {
+		return nil, ErrValidation("")
+	}
+	return s.Dao.GetDevice(objectID, ctx)
 }
 
 func (s *Service) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error) {
@@ -66,4 +58,15 @@ func (s *Service) GetPaginatedDevices(limit, page int, ctx context.Context) ([]D
 
 func (s *Service) GetAllDevices(ctx context.Context) ([]Device, error) {
 	return s.Dao.GetAllDevices(ctx)
+}
+
+func (s *Service) validateDevicePayload(payload *DevicePayload) error {
+	validationErrors := s.validator.Struct(payload)
+	if validationErrors != nil {
+		for _, err := range validationErrors.(validator.ValidationErrors) {
+			fmt.Println(err)
+		}
+		return ErrValidation("")
+	}
+	return nil
 }

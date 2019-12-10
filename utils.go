@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/url"
 	"strconv"
 )
@@ -27,4 +28,12 @@ func readIntFromQueryParameter(url *url.URL, param string, defaultValue int) (in
 		return defaultValue, nil
 	}
 	return convertToPositiveInteger(valueStr)
+}
+
+func stringIDToObjectID(id string) (primitive.ObjectID, error) {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return [12]byte{}, err
+	}
+	return objectID, nil
 }

@@ -61,8 +61,9 @@ func Test_AddDeviceHandler_GivenDevicePayload_HandlerReturnsDeviceObjectAndPerfo
 func Test_GetDeviceHandler_GivenNonExistingId_HandlerReturnsError404(t *testing.T) {
 	r := newRouter(&Controller{mainService: NewService(&mockDao{device: nil})})
 	mockServer := httptest.NewServer(r)
+	id := primitive.NewObjectID().Hex()
 
-	resp, err := http.Get(mockServer.URL + "/devices/123")
+	resp, err := http.Get(mockServer.URL + "/devices/" + id)
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
@@ -71,8 +72,9 @@ func Test_GetDeviceHandler_GivenNonExistingId_HandlerReturnsError404(t *testing.
 func Test_GetDeviceHandler_GivenErrorInDao_HandlerReturnsError500(t *testing.T) {
 	r := newRouter(&Controller{mainService: NewService(&mockDao{returnErr: ErrDao("")})})
 	mockServer := httptest.NewServer(r)
+	id := primitive.NewObjectID().Hex()
 
-	resp, err := http.Get(mockServer.URL + "/devices/1")
+	resp, err := http.Get(mockServer.URL + "/devices/" + id)
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
@@ -81,8 +83,9 @@ func Test_GetDeviceHandler_GivenErrorInDao_HandlerReturnsError500(t *testing.T) 
 func Test_GetDeviceHandler_GivenCorrectId_HandlerReturnsDeviceObject(t *testing.T) {
 	r := newRouter(&Controller{mainService: NewService(&mockDao{device: &Device{Name: "test name"}})})
 	mockServer := httptest.NewServer(r)
+	id := primitive.NewObjectID().Hex()
 
-	resp, err := http.Get(mockServer.URL + "/devices/1")
+	resp, err := http.Get(mockServer.URL + "/devices/" + id)
 	assert.NoError(t, err)
 
 	expected := &Device{Name: "test name"}
@@ -157,4 +160,41 @@ func Test_StartTickerServiceHandler_GivenDaoError_HandlerReturns500(t *testing.T
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
+
+func Test_CaseSwitchError_GivenDifferentErrors_FuncWritesProperStatusCode(t *testing.T) {
+	tests := map[string]struct {
+		err      error
+		expected int
+	}{
+		"validator err": {err: ErrValidation(""), expected: http.StatusBadRequest},
+		"dao err":       {err: ErrDao(""), expected: http.StatusInternalServerError},
+	}
+
+	var err bool
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			w := &mockResponseWriter{}
+			err = caseSwitchError(w, tc.err)
+
+			assert.Equal(t, err, true)
+			assert.Equal(t, tc.expected, w.calledWithStatusCode)
+		})
+	}
+}
+
+type mockResponseWriter struct {
+	calledWithStatusCode int
+}
+
+func (m *mockResponseWriter) Header() http.Header {
+	return map[string][]string{}
+}
+
+func (m *mockResponseWriter) Write([]byte) (int, error) {
+	return 0, nil
+}
+
+func (m *mockResponseWriter) WriteHeader(statusCode int) {
+	m.calledWithStatusCode = statusCode
 }

@@ -28,13 +28,7 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 	}
 
 	device, err := he.controller.AddDevice(&devPayload, r.Context())
-	if err != nil {
-		switch err.(type) {
-		case ErrValidation:
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+	if caseSwitchError(w, err) {
 		return
 	}
 
@@ -51,8 +45,7 @@ func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.R
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if caseSwitchError(w, err) {
 		return
 	}
 
@@ -113,4 +106,17 @@ func pageAndLimitWrapper(h http.HandlerFunc) http.HandlerFunc {
 
 		h.ServeHTTP(w, r.WithContext(ctx))
 	}
+}
+
+func caseSwitchError(w http.ResponseWriter, err error) bool {
+	if err != nil {
+		switch err.(type) {
+		case ErrValidation:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return true
+	}
+	return false
 }

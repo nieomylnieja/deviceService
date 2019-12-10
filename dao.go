@@ -78,15 +78,15 @@ func (db *Dao) GetDevice(id primitive.ObjectID, ctx context.Context) (*Device, e
 	if err := findResult.Err(); err != nil {
 		return nil, err
 	}
-	var dev *Device
-	if err := findResult.Decode(dev); err != nil {
+	var dev Device
+	if err := findResult.Decode(&dev); err != nil {
 		return nil, err
 	}
-	return dev, nil
+	return &dev, nil
 }
 
 func (db *Dao) GetAllDevices(ctx context.Context) ([]Device, error) {
-	allDevices := []Device{}
+	allDevices := make([]Device, 0)
 	cursor, err := db.collection.Find(ctx, bson.D{})
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (db *Dao) GetAllDevices(ctx context.Context) ([]Device, error) {
 
 func (db *Dao) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error) {
 	lower, upper := setPageBoundsToInt64(limit, page)
-	paginatedDevices := []Device{}
+	paginatedDevices := make([]Device, 0)
 	opts := options.FindOptions{}
 
 	cursor, err := db.collection.Find(ctx, bson.D{},

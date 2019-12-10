@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 )
 
@@ -40,7 +41,7 @@ func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.R
 	id := mux.Vars(r)["id"]
 
 	device, err := he.controller.GetDevice(id, r.Context())
-	if device == nil && err == nil {
+	if device == nil && err == mongo.ErrNoDocuments {
 		fmt.Println("device was not found")
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -50,7 +51,6 @@ func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.R
 	}
 
 	he.writeObject(w, device)
-
 }
 
 func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *http.Request) {

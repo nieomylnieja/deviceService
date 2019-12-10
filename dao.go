@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -9,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
 	"os"
+	"regexp"
+	"runtime"
 )
 
 type Dao struct {
@@ -25,11 +29,15 @@ type DeviceDao interface {
 
 func NewDao() *Dao {
 	mongodbURI := os.Getenv("MONGODB_URI")
+	mongodbNAME := os.Getenv("MONGODB_NAME")
 	client, err := mongo.NewClient(options.Client().ApplyURI(mongodbURI))
 	if err != nil {
 		log.Panicf("couldnt create client with the uri: %s :%+v", mongodbURI, err.Error())
 	}
-	collection := client.Database(os.Getenv("MONGODB_NAME")).Collection("devices")
+	if err = verifyMongoDBName(mongodbNAME); err != nil {
+		log.Panicf("incorrect name: %s: %+v", mongodbNAME, err.Error())
+	}
+	collection := client.Database(mongodbNAME).Collection("devices")
 	dao := &Dao{
 		mongoClient: client,
 		collection:  collection,
@@ -74,13 +82,13 @@ func (db *Dao) GetDevice(id string, ctx context.Context) (*Device, error) {
 	if err := findResult.Err(); err != nil {
 		return nil, err
 	}
-	var dev Device
-	err = findResult.Decode(&dev)
+	var dev *Device
+	err = findResult.Decode(dev)
 	if err != nil {
 		return nil, err
 	}
 
-	return &dev, nil
+	return dev, nil
 }
 
 func (db *Dao) GetAllDevices(ctx context.Context) ([]Device, error) {
@@ -108,4 +116,21 @@ func (db *Dao) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Devi
 
 	err = cursor.All(ctx, &paginatedDevices)
 	return paginatedDevices, err
+}
+
+func verifyMongoDBName(dbName string) error {
+	if !(len(dbName) < 64 && 0 < len(dbName)) {
+		return errors.New("db name must not be empty")
+	}
+	var notAllowed string
+	if runtime.GOOS == "windows" {
+		notAllowed = `/\\. "$*<>:|?`
+	} else {
+		notAllowed = `/\\. "$`
+	}
+	re := regexp.MustCompile(fmt.Sprintf(`[%s]`, notAllowed))
+	if re.MatchString(dbName) {
+		return fmt.Errorf("db name can't contain any of these characters: %s", notAllowed)
+	}
+	return nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 )
@@ -34,7 +35,7 @@ func (s *Service) validate(payload *DevicePayload) error {
 	return nil
 }
 
-func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
+func (s *Service) AddDevice(payload *DevicePayload, ctx context.Context) (*Device, error) {
 	if payload.Interval == 0 {
 		payload.Interval = 1000
 	}
@@ -42,7 +43,7 @@ func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	id, err := s.Dao.AddDevice(payload)
+	id, err := s.Dao.AddDevice(payload, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -55,14 +56,14 @@ func (s *Service) AddDevice(payload *DevicePayload) (*Device, error) {
 	}, nil
 }
 
-func (s *Service) GetDevice(id string) (*Device, error) {
-	return s.Dao.GetDevice(id)
+func (s *Service) GetDevice(id string, ctx context.Context) (*Device, error) {
+	return s.Dao.GetDevice(id, ctx)
 }
 
-func (s *Service) GetPaginatedDevices(limit, page int) ([]Device, error) {
-	return s.Dao.GetPaginatedDevices(limit, page)
+func (s *Service) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error) {
+	return s.Dao.GetPaginatedDevices(limit, page, ctx)
 }
 
-func (s *Service) GetAllDevices() ([]Device, error) {
-	return s.Dao.GetAllDevices()
+func (s *Service) GetAllDevices(ctx context.Context) ([]Device, error) {
+	return s.Dao.GetAllDevices(ctx)
 }

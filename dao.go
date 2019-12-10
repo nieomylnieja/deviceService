@@ -14,14 +14,13 @@ import (
 type Dao struct {
 	mongoClient *mongo.Client
 	collection  *mongo.Collection
-	ctx         context.Context
 }
 
 type DeviceDao interface {
-	AddDevice(device *DevicePayload) (primitive.ObjectID, error)
-	GetDevice(id string) (*Device, error)
-	GetPaginatedDevices(limit int, page int) ([]Device, error)
-	GetAllDevices() ([]Device, error)
+	AddDevice(device *DevicePayload, ctx context.Context) (primitive.ObjectID, error)
+	GetDevice(id string, ctx context.Context) (*Device, error)
+	GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error)
+	GetAllDevices(ctx context.Context) ([]Device, error)
 }
 
 func NewDao() *Dao {
@@ -34,31 +33,30 @@ func NewDao() *Dao {
 	dao := &Dao{
 		mongoClient: client,
 		collection:  collection,
-		ctx:         context.Background(),
 	}
-	dao.connect()
+	dao.connect(context.Background())
 	return dao
 }
 
-func (db *Dao) connect() {
-	err := db.mongoClient.Connect(db.ctx)
+func (db *Dao) connect(ctx context.Context) {
+	err := db.mongoClient.Connect(ctx)
 	if err != nil {
 		log.Panicf("couldn't connect to db: %+v", err.Error())
 	}
-	err = db.mongoClient.Ping(db.ctx, readpref.Primary())
+	err = db.mongoClient.Ping(ctx, readpref.Primary())
 	if err != nil {
 		log.Panicf("connection with db was not established properly: %+v", err.Error())
 	}
 }
 
-func (db *Dao) AddDevice(device *DevicePayload) (primitive.ObjectID, error) {
+func (db *Dao) AddDevice(device *DevicePayload, ctx context.Context) (primitive.ObjectID, error) {
 	dev := Device{
 		Id:       primitive.NewObjectID(),
 		Name:     device.Name,
 		Value:    device.Value,
 		Interval: device.Interval,
 	}
-	result, err := db.collection.InsertOne(db.ctx, dev)
+	result, err := db.collection.InsertOne(ctx, dev)
 	if err != nil {
 		log.Printf("%v was not added to db: %+v", dev, err.Error())
 		return [12]byte{}, err
@@ -67,16 +65,16 @@ func (db *Dao) AddDevice(device *DevicePayload) (primitive.ObjectID, error) {
 	return result.InsertedID.(primitive.ObjectID), nil
 }
 
-func (db *Dao) GetDevice(id string) (*Device, error) {
+func (db *Dao) GetDevice(id string, ctx context.Context) (*Device, error) {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
-	findResult := db.collection.FindOne(db.ctx, bson.M{"_id": objID})
+	findResult := db.collection.FindOne(ctx, bson.M{"_id": objID})
 	if err := findResult.Err(); err != nil {
 		return nil, err
 	}
-	dev := Device{}
+	var dev Device
 	err = findResult.Decode(&dev)
 	if err != nil {
 		return nil, err
@@ -85,29 +83,29 @@ func (db *Dao) GetDevice(id string) (*Device, error) {
 	return &dev, nil
 }
 
-func (db *Dao) GetAllDevices() ([]Device, error) {
+func (db *Dao) GetAllDevices(ctx context.Context) ([]Device, error) {
 	allDevices := []Device{}
-	cursor, err := db.collection.Find(db.ctx, bson.D{})
+	cursor, err := db.collection.Find(ctx, bson.D{})
 	if err != nil {
 		return nil, err
 	}
 
-	err = cursor.All(db.ctx, &allDevices)
+	err = cursor.All(ctx, &allDevices)
 	return allDevices, err
 }
 
-func (db *Dao) GetPaginatedDevices(limit, page int) ([]Device, error) {
+func (db *Dao) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error) {
 	lower, upper := setPageBoundsToInt64(limit, page)
 	paginatedDevices := []Device{}
 	opts := options.FindOptions{}
 
-	cursor, err := db.collection.Find(db.ctx, bson.D{},
+	cursor, err := db.collection.Find(ctx, bson.D{},
 		opts.SetSkip(lower),
 		opts.SetLimit(upper))
 	if err != nil {
 		return nil, err
 	}
 
-	err = cursor.All(db.ctx, &paginatedDevices)
+	err = cursor.All(ctx, &paginatedDevices)
 	return paginatedDevices, err
 }

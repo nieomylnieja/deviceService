@@ -27,7 +27,7 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	device, err := he.controller.AddDevice(&devPayload)
+	device, err := he.controller.AddDevice(&devPayload, r.Context())
 	if err != nil {
 		switch err.(type) {
 		case ErrValidation:
@@ -45,7 +45,7 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
-	device, err := he.controller.GetDevice(id)
+	device, err := he.controller.GetDevice(id, r.Context())
 	if device == nil && err == nil {
 		fmt.Println("device was not found")
 		w.WriteHeader(http.StatusNotFound)
@@ -64,7 +64,7 @@ func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *htt
 	limit := r.Context().Value("limit").(int)
 	page := r.Context().Value("page").(int)
 
-	devices, err := he.controller.GetPaginatedDevices(limit, page)
+	devices, err := he.controller.GetPaginatedDevices(limit, page, r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -75,7 +75,7 @@ func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *htt
 }
 
 func (he *HandlersEnvironment) StartTickerService(w http.ResponseWriter, r *http.Request) {
-	err := he.controller.StartTickerService()
+	err := he.controller.StartTickerService(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

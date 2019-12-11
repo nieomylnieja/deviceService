@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -75,7 +76,7 @@ func Test_AddDeviceHandler_GivenDevicePayload_HandlerReturnsDeviceObjectAndPerfo
 }
 
 func Test_GetDeviceHandler_GivenNonExistingId_HandlerReturnsError404(t *testing.T) {
-	r := newRouter(&Controller{mainService: NewService(&mockDao{device: nil})})
+	r := newRouter(&Controller{mainService: NewService(&mockDao{returnErr: mongo.ErrNoDocuments})})
 	mockServer := httptest.NewServer(r)
 	id := primitive.NewObjectID().Hex()
 

@@ -10,6 +10,22 @@ import (
 	"testing"
 )
 
+type mockResponseWriter struct {
+	calledWithStatusCode int
+}
+
+func (m *mockResponseWriter) Header() http.Header {
+	return map[string][]string{}
+}
+
+func (m *mockResponseWriter) Write([]byte) (int, error) {
+	return 0, nil
+}
+
+func (m *mockResponseWriter) WriteHeader(statusCode int) {
+	m.calledWithStatusCode = statusCode
+}
+
 func Test_WriteObject_GivenAnObject_FuncWritesMarshalledObject(t *testing.T) {
 	dh := HandlersEnvironment{}
 	resp := httptest.NewRecorder()
@@ -181,20 +197,4 @@ func Test_CaseSwitchError_GivenDifferentErrors_FuncWritesProperStatusCode(t *tes
 			assert.Equal(t, tc.expected, w.calledWithStatusCode)
 		})
 	}
-}
-
-type mockResponseWriter struct {
-	calledWithStatusCode int
-}
-
-func (m *mockResponseWriter) Header() http.Header {
-	return map[string][]string{}
-}
-
-func (m *mockResponseWriter) Write([]byte) (int, error) {
-	return 0, nil
-}
-
-func (m *mockResponseWriter) WriteHeader(statusCode int) {
-	m.calledWithStatusCode = statusCode
 }

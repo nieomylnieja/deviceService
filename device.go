@@ -1,18 +1,19 @@
 package main
 
 import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
 type Device struct {
-	Id       int
-	Name     string
-	Value    float64
-	Interval int
+	Id       primitive.ObjectID `bson:"_id" json:"id,omitempty"`
+	Name     string             `json:"name"`
+	Value    float64            `json:"value"`
+	Interval int                `json:"interval"`
 }
 
 type Measurement struct {
-	Id    int
+	Id    primitive.ObjectID
 	Value float64
 }
 

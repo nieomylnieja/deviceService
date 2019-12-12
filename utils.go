@@ -2,22 +2,13 @@ package main
 
 import (
 	"errors"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/url"
 	"strconv"
 )
 
-func setPageBounds(limit int, page int, len int) (lower int, upper int) {
-	if limit == 0 {
-		return 0, len
-	}
-	lower = limit * page
-	upper = lower + limit
-	if len < lower {
-		lower, upper = 0, 0
-	} else if len < upper {
-		upper = len
-	}
-	return lower, upper
+func setPageBoundsToInt64(limit, page int) (lower int64, upper int64) {
+	return int64(page * limit), int64(page*limit + limit)
 }
 
 func convertToPositiveInteger(s string) (int, error) {
@@ -37,4 +28,12 @@ func readIntFromQueryParameter(url *url.URL, param string, defaultValue int) (in
 		return defaultValue, nil
 	}
 	return convertToPositiveInteger(valueStr)
+}
+
+func stringIDToObjectID(id string) (primitive.ObjectID, error) {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return [12]byte{}, err
+	}
+	return objectID, nil
 }

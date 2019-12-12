@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"sync"
 )
@@ -16,16 +17,16 @@ func NewController(mainService *Service) *Controller {
 	return &Controller{
 		mainService:   mainService,
 		tickerService: NewTickerService(),
-		writerService: NewMeasurementsWriterService(os.Getenv("INFLUX_ADDRESS"),
-			os.Getenv("INFLUX_DB_NAME")),
+		writerService: NewMeasurementsWriterService(os.Getenv("INFLUXDB_URL"),
+			os.Getenv("INFLUXDB_NAME")),
 		startOnce: sync.Once{},
 	}
 }
 
-func (c *Controller) StartTickerService() error {
+func (c *Controller) StartTickerService(ctx context.Context) error {
 	var err error
 	c.startOnce.Do(func() {
-		err = c.startTickerService()
+		err = c.startTickerService(ctx)
 		if err != nil {
 			return
 		}
@@ -33,8 +34,8 @@ func (c *Controller) StartTickerService() error {
 	return err
 }
 
-func (c *Controller) startTickerService() error {
-	devices, err := c.mainService.GetAllDevices()
+func (c *Controller) startTickerService(ctx context.Context) error {
+	devices, err := c.mainService.GetAllDevices(ctx)
 	if err != nil {
 		return err
 	}
@@ -46,14 +47,14 @@ func (c *Controller) startTickerService() error {
 	return err
 }
 
-func (c *Controller) GetDevice(id int) (*Device, error) {
-	return c.mainService.GetDevice(id)
+func (c *Controller) GetDevice(id string, ctx context.Context) (*Device, error) {
+	return c.mainService.GetDevice(id, ctx)
 }
 
-func (c *Controller) AddDevice(devPayload *DevicePayload) (*Device, error) {
-	return c.mainService.AddDevice(devPayload)
+func (c *Controller) AddDevice(devPayload *DevicePayload, ctx context.Context) (*Device, error) {
+	return c.mainService.AddDevice(devPayload, ctx)
 }
 
-func (c *Controller) GetPaginatedDevices(limit, page int) ([]Device, error) {
-	return c.mainService.GetPaginatedDevices(limit, page)
+func (c *Controller) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error) {
+	return c.mainService.GetPaginatedDevices(limit, page, ctx)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 )
 
@@ -27,14 +28,8 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	device, err := he.controller.AddDevice(&devPayload)
-	if err != nil {
-		switch err.(type) {
-		case ErrValidation:
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+	device, err := he.controller.AddDevice(&devPayload, r.Context())
+	if caseSwitchError(w, err) {
 		return
 	}
 
@@ -43,34 +38,26 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 }
 
 func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
-	input := mux.Vars(r)["id"]
+	id := mux.Vars(r)["id"]
 
-	id, err := convertToPositiveInteger(input)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	device, err := he.controller.GetDevice(id)
-	if device == nil && err == nil {
+	device, err := he.controller.GetDevice(id, r.Context())
+	if device == nil && err == mongo.ErrNoDocuments {
 		fmt.Println("device was not found")
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if caseSwitchError(w, err) {
 		return
 	}
 
 	he.writeObject(w, device)
-
 }
 
 func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *http.Request) {
 	limit := r.Context().Value("limit").(int)
 	page := r.Context().Value("page").(int)
 
-	devices, err := he.controller.GetPaginatedDevices(limit, page)
+	devices, err := he.controller.GetPaginatedDevices(limit, page, r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -81,7 +68,7 @@ func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *htt
 }
 
 func (he *HandlersEnvironment) StartTickerService(w http.ResponseWriter, r *http.Request) {
-	err := he.controller.StartTickerService()
+	err := he.controller.StartTickerService(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -119,4 +106,17 @@ func pageAndLimitWrapper(h http.HandlerFunc) http.HandlerFunc {
 
 		h.ServeHTTP(w, r.WithContext(ctx))
 	}
+}
+
+func caseSwitchError(w http.ResponseWriter, err error) bool {
+	if err != nil {
+		switch err.(type) {
+		case ErrValidation:
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return true
+	}
+	return false
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -18,8 +19,11 @@ func valueService(n int) float64 {
 }
 
 func main() {
-	s := NewService(NewDao())
-	c := NewController(s)
+	wrtS := NewWriterService(os.Getenv("INFLUXDB_URL"),
+		os.Getenv("INFLUXDB_NAME"))
+	tckS := NewTickerService()
+	mainS := NewService(NewDao())
+	c := NewController(mainS, wrtS, tckS)
 
 	r := newRouter(c)
 

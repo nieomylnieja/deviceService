@@ -28,7 +28,7 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	device, err := he.controller.AddDevice(&devPayload, r.Context())
+	device, err := he.controller.AddDevice(r.Context(), &devPayload)
 	if caseSwitchError(w, err) {
 		return
 	}
@@ -40,7 +40,7 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
-	device, err := he.controller.GetDevice(id, r.Context())
+	device, err := he.controller.GetDevice(r.Context(), id)
 	if device == nil && err == mongo.ErrNoDocuments {
 		fmt.Println("device was not found")
 		w.WriteHeader(http.StatusNotFound)
@@ -57,7 +57,7 @@ func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *htt
 	limit := r.Context().Value("limit").(int)
 	page := r.Context().Value("page").(int)
 
-	devices, err := he.controller.GetPaginatedDevices(limit, page, r.Context())
+	devices, err := he.controller.GetPaginatedDevices(r.Context(), limit, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

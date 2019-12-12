@@ -2,24 +2,23 @@ package main
 
 import (
 	"context"
-	"os"
 	"sync"
 )
 
 type Controller struct {
 	mainService   *Service
-	tickerService *TickerService
-	writerService *MeasurementsWriterService
+	tickerService TickerService
+	writerService WriterService
 	startOnce     sync.Once
 }
 
-func NewController(mainService *Service) *Controller {
+func NewController(mainService *Service, writerService WriterService,
+	tickerService TickerService) *Controller {
 	return &Controller{
 		mainService:   mainService,
-		tickerService: NewTickerService(),
-		writerService: NewMeasurementsWriterService(os.Getenv("INFLUXDB_URL"),
-			os.Getenv("INFLUXDB_NAME")),
-		startOnce: sync.Once{},
+		writerService: writerService,
+		tickerService: tickerService,
+		startOnce:     sync.Once{},
 	}
 }
 
@@ -47,14 +46,14 @@ func (c *Controller) startTickerService(ctx context.Context) error {
 	return err
 }
 
-func (c *Controller) GetDevice(id string, ctx context.Context) (*Device, error) {
-	return c.mainService.GetDevice(id, ctx)
+func (c *Controller) GetDevice(ctx context.Context, id string) (*Device, error) {
+	return c.mainService.GetDevice(ctx, id)
 }
 
-func (c *Controller) AddDevice(devPayload *DevicePayload, ctx context.Context) (*Device, error) {
-	return c.mainService.AddDevice(devPayload, ctx)
+func (c *Controller) AddDevice(ctx context.Context, devPayload *DevicePayload) (*Device, error) {
+	return c.mainService.AddDevice(ctx, devPayload)
 }
 
-func (c *Controller) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error) {
-	return c.mainService.GetPaginatedDevices(limit, page, ctx)
+func (c *Controller) GetPaginatedDevices(ctx context.Context, limit, page int) ([]Device, error) {
+	return c.mainService.GetPaginatedDevices(ctx, limit, page)
 }

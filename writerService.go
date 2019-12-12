@@ -6,12 +6,16 @@ import (
 	"time"
 )
 
+type WriterService interface {
+	Start(publish <-chan Measurement) error
+}
+
 type MeasurementsWriterService struct {
 	db           string
 	writerClient client.Client
 }
 
-func NewMeasurementsWriterService(dbAddress, dbName string) *MeasurementsWriterService {
+func NewWriterService(dbAddress, dbName string) *MeasurementsWriterService {
 	clt, err := client.NewHTTPClient(client.HTTPConfig{
 		Addr: dbAddress,
 	})

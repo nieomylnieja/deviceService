@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewMeasurementsWriterService_GivenWrongAddressServicePanics(t *testing.T) {
-	writerService := NewMeasurementsWriterService
+	writerService := NewWriterService
 
 	assert2.Panics(t, func() { writerService("abc", "123") })
 }

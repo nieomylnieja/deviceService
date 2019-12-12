@@ -20,10 +20,10 @@ type Dao struct {
 	collection  *mongo.Collection
 }
 
-type DeviceDao interface {
-	AddDevice(device *DevicePayload, ctx context.Context) (primitive.ObjectID, error)
-	GetDevice(id primitive.ObjectID, ctx context.Context) (*Device, error)
-	GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error)
+type DevicesDao interface {
+	AddDevice(ctx context.Context, device *DevicePayload) (primitive.ObjectID, error)
+	GetDevice(ctx context.Context, id primitive.ObjectID) (*Device, error)
+	GetPaginatedDevices(ctx context.Context, limit, page int) ([]Device, error)
 	GetAllDevices(ctx context.Context) ([]Device, error)
 }
 
@@ -57,7 +57,7 @@ func (db *Dao) connect(ctx context.Context) {
 	}
 }
 
-func (db *Dao) AddDevice(device *DevicePayload, ctx context.Context) (primitive.ObjectID, error) {
+func (db *Dao) AddDevice(ctx context.Context, device *DevicePayload) (primitive.ObjectID, error) {
 	dev := Device{
 		Id:       primitive.NewObjectID(),
 		Name:     device.Name,
@@ -73,7 +73,7 @@ func (db *Dao) AddDevice(device *DevicePayload, ctx context.Context) (primitive.
 	return result.InsertedID.(primitive.ObjectID), nil
 }
 
-func (db *Dao) GetDevice(id primitive.ObjectID, ctx context.Context) (*Device, error) {
+func (db *Dao) GetDevice(ctx context.Context, id primitive.ObjectID) (*Device, error) {
 	findResult := db.collection.FindOne(ctx, bson.M{"_id": id})
 	if err := findResult.Err(); err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (db *Dao) GetAllDevices(ctx context.Context) ([]Device, error) {
 	return allDevices, err
 }
 
-func (db *Dao) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error) {
+func (db *Dao) GetPaginatedDevices(ctx context.Context, limit, page int) ([]Device, error) {
 	lower, upper := setPageBoundsToInt64(limit, page)
 	paginatedDevices := make([]Device, 0)
 	opts := options.FindOptions{}

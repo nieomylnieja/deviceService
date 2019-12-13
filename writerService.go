@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/influxdata/influxdb1-client/v2"
 	"log"
+	"os"
 	"time"
 )
 
@@ -15,13 +16,13 @@ type MeasurementsWriterService struct {
 	writerClient client.Client
 }
 
-func NewWriterService(dbAddress, dbName string) *MeasurementsWriterService {
+func NewWriterService() *MeasurementsWriterService {
+	dbAddress := os.Getenv("INFLUXDB_URL")
+	dbName := os.Getenv("INFLUXDB_NAME")
 	clt, err := client.NewHTTPClient(client.HTTPConfig{
 		Addr: dbAddress,
 	})
-	if err != nil {
-		log.Panicf("could not initialize influx connection: %s", err.Error())
-	}
+	panicOnError(err, "could not initialize influx connection")
 	return &MeasurementsWriterService{
 		db:           dbName,
 		writerClient: clt,

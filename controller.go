@@ -9,15 +9,17 @@ type Controller struct {
 	mainService   *Service
 	tickerService TickerService
 	writerService WriterService
+	relayService  AMQPService
 	startOnce     sync.Once
 }
 
 func NewController(mainService *Service, writerService WriterService,
-	tickerService TickerService) *Controller {
+	tickerService TickerService, relayService AMQPService) *Controller {
 	return &Controller{
 		mainService:   mainService,
 		writerService: writerService,
 		tickerService: tickerService,
+		relayService:  relayService,
 		startOnce:     sync.Once{},
 	}
 }

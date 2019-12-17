@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_SetPageBoundsToInt64(t *testing.T) {
+func TestSetPageBoundsToInt64(t *testing.T) {
 	tests := map[string]struct {
 		input    map[string]int
 		expected map[string]int64
@@ -35,7 +35,7 @@ func Test_SetPageBoundsToInt64(t *testing.T) {
 	}
 }
 
-func Test_ConvertToPositiveInteger_GivenWrongInput_FuncReturnsError(t *testing.T) {
+func TestConvertToPositiveInteger_GivenWrongInput_FuncReturnsError(t *testing.T) {
 	tests := map[string]string{
 		"char":            "a",
 		"negative number": "-2",
@@ -51,7 +51,7 @@ func Test_ConvertToPositiveInteger_GivenWrongInput_FuncReturnsError(t *testing.T
 	}
 }
 
-func Test_ConvertToPositiveInteger_GivenCorrectInput_FuncReturnsPositiveInt(t *testing.T) {
+func TestConvertToPositiveInteger_GivenCorrectInput_FuncReturnsPositiveInt(t *testing.T) {
 	tests := map[string]string{
 		"zero":              "0",
 		"non zero positive": "14",
@@ -68,7 +68,7 @@ func Test_ConvertToPositiveInteger_GivenCorrectInput_FuncReturnsPositiveInt(t *t
 	}
 }
 
-func Test_ReadIntFromQueryParameter_GivenNoValueInParam_FuncReturnsDefault(t *testing.T) {
+func TestReadIntFromQueryParameter_GivenNoValueInParam_FuncReturnsDefault(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/", nil)
 	result, err := readIntFromQueryParameter(req.URL, "limit", 100)
 
@@ -76,13 +76,13 @@ func Test_ReadIntFromQueryParameter_GivenNoValueInParam_FuncReturnsDefault(t *te
 	assert.Equal(t, 100, result)
 }
 
-func Test_StringIDToObjectID_GivenInvalidId_ServiceReturnsError(t *testing.T) {
+func TestStringIDToObjectID_GivenInvalidId_ServiceReturnsError(t *testing.T) {
 	_, err := stringIDToObjectID("a")
 
 	assert.Error(t, err)
 }
 
-func Test_StringIDToObjectID_GivenValidId_ServiceReturnsObjectID(t *testing.T) {
+func TestStringIDToObjectID_GivenValidId_ServiceReturnsObjectID(t *testing.T) {
 	id := primitive.NewObjectID()
 	objectID, err := stringIDToObjectID(id.Hex())
 

@@ -15,16 +15,16 @@ type mockDao struct {
 	data        []Device
 }
 
-func (m *mockDao) AddDevice(device *DevicePayload, ctx context.Context) (primitive.ObjectID, error) {
+func (m *mockDao) AddDevice(ctx context.Context, device *DevicePayload) (primitive.ObjectID, error) {
 	m.calledTimes++
 	return m.returnValue, m.returnErr
 }
 
-func (m *mockDao) GetDevice(id primitive.ObjectID, ctx context.Context) (*Device, error) {
+func (m *mockDao) GetDevice(ctx context.Context, id primitive.ObjectID) (*Device, error) {
 	return m.device, m.returnErr
 }
 
-func (m *mockDao) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error) {
+func (m *mockDao) GetPaginatedDevices(ctx context.Context, limit, page int) ([]Device, error) {
 	return m.data, m.returnErr
 }
 
@@ -41,7 +41,7 @@ func TestService_AddDevice_CorrectDevice_ServiceSavesNewDevice(t *testing.T) {
 	dao := &mockDao{returnValue: primitive.NewObjectID()}
 	out := NewService(dao)
 
-	dev, err := out.AddDevice(device, context.TODO())
+	dev, err := out.AddDevice(context.TODO(), device)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, dao.calledTimes)
@@ -51,11 +51,12 @@ func TestService_AddDevice_CorrectDevice_ServiceSavesNewDevice(t *testing.T) {
 func TestService_AddDevice_CorrectDeviceAndDaoFails_ServiceFails(t *testing.T) {
 	out := NewService(&mockDao{returnErr: ErrDao("")})
 
-	_, err := out.AddDevice(&DevicePayload{
-		Value:    10.23,
-		Name:     "Thermostat",
-		Interval: 1000,
-	}, context.TODO())
+	_, err := out.AddDevice(context.TODO(),
+		&DevicePayload{
+			Value:    10.23,
+			Name:     "Thermostat",
+			Interval: 1000,
+		})
 
 	assert.Error(t, err)
 }
@@ -63,8 +64,8 @@ func TestService_AddDevice_CorrectDeviceAndDaoFails_ServiceFails(t *testing.T) {
 func TestService_AddDevice_GivenIntervalValueBelowZeroOrEqualToZero_ServiceFails(t *testing.T) {
 	out := NewService(&mockDao{})
 
-	_, err1 := out.AddDevice(&DevicePayload{Interval: -1}, context.TODO())
-	_, err2 := out.AddDevice(&DevicePayload{Interval: 1}, context.TODO())
+	_, err1 := out.AddDevice(context.TODO(), &DevicePayload{Interval: -1})
+	_, err2 := out.AddDevice(context.TODO(), &DevicePayload{Interval: 1})
 
 	assert.Error(t, err1)
 	assert.Error(t, err2)
@@ -73,7 +74,7 @@ func TestService_AddDevice_GivenIntervalValueBelowZeroOrEqualToZero_ServiceFails
 func TestService_AddDevice_CorrectPayload_ServiceDefaultsInterval(t *testing.T) {
 	out := NewService(&mockDao{})
 
-	dev, err := out.AddDevice(&DevicePayload{Name: "aaa"}, context.TODO())
+	dev, err := out.AddDevice(context.TODO(), &DevicePayload{Name: "aaa"})
 
 	expected := &Device{Interval: 1000}
 
@@ -85,7 +86,7 @@ func TestService_GetDevice_GivenDaoError_ServiceReturnsErrDao(t *testing.T) {
 	out := NewService(&mockDao{returnErr: ErrDao("")})
 	id := primitive.NewObjectID().Hex()
 
-	_, err := out.GetDevice(id, context.TODO())
+	_, err := out.GetDevice(context.TODO(), id)
 
 	assert.Equal(t, ErrDao(""), err)
 }
@@ -94,7 +95,7 @@ func TestService_GetDevice_GivenDeviceId_ServiceReturnsDeviceObject(t *testing.T
 	id := primitive.NewObjectID().Hex()
 	out := NewService(&mockDao{device: &Device{Name: "name"}})
 
-	dev, err := out.GetDevice(id, context.TODO())
+	dev, err := out.GetDevice(context.TODO(), id)
 
 	assert.NoError(t, err)
 	assert.Equal(t, &Device{Name: "name"}, dev)
@@ -104,7 +105,7 @@ func TestService_GetDevice_GivenIdThatDoesntExist_ServiceReturnsNil(t *testing.T
 	out := NewService(&mockDao{returnErr: nil})
 	id := primitive.NewObjectID().Hex()
 
-	_, err := out.GetDevice(id, context.TODO())
+	_, err := out.GetDevice(context.TODO(), id)
 
 	assert.NoError(t, err)
 }
@@ -112,7 +113,7 @@ func TestService_GetDevice_GivenIdThatDoesntExist_ServiceReturnsNil(t *testing.T
 func TestService_GetPaginatedDevices_GivenList_ServiceReturnsList(t *testing.T) {
 	out := NewService(&mockDao{data: []Device{{Name: "test name"}}})
 
-	devices, err := out.GetPaginatedDevices(0, 0, context.TODO())
+	devices, err := out.GetPaginatedDevices(context.TODO(), 0, 0)
 
 	expected := []Device{{Name: "test name"}}
 
@@ -123,7 +124,7 @@ func TestService_GetPaginatedDevices_GivenList_ServiceReturnsList(t *testing.T) 
 func TestService_GetPaginatedDevices_GivenDaoError_ServiceReturnsError(t *testing.T) {
 	out := NewService(&mockDao{returnErr: ErrDao("")})
 
-	_, err := out.GetPaginatedDevices(1, 0, context.TODO())
+	_, err := out.GetPaginatedDevices(context.TODO(), 1, 0)
 
 	assert.Equal(t, ErrDao(""), err)
 }

@@ -9,17 +9,17 @@ import (
 	"net/http"
 )
 
-type HandlersEnvironment struct {
-	controller *Controller
+type HandlersEnv struct {
+	controller HandlersController
 }
 
-func NewHandlersEnvironment(controller *Controller) *HandlersEnvironment {
-	return &HandlersEnvironment{
+func NewHandlersEnv(controller HandlersController) *HandlersEnv {
+	return &HandlersEnv{
 		controller: controller,
 	}
 }
 
-func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.Request) {
+func (he *HandlersEnv) AddDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	var devPayload DevicePayload
 
 	err := json.NewDecoder(r.Body).Decode(&devPayload)
@@ -28,7 +28,7 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	device, err := he.controller.AddDevice(&devPayload, r.Context())
+	device, err := he.controller.AddDevice(r.Context(), &devPayload)
 	if caseSwitchError(w, err) {
 		return
 	}
@@ -37,10 +37,10 @@ func (he *HandlersEnvironment) AddDeviceHandler(w http.ResponseWriter, r *http.R
 
 }
 
-func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
+func (he *HandlersEnv) GetDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 
-	device, err := he.controller.GetDevice(id, r.Context())
+	device, err := he.controller.GetDevice(r.Context(), id)
 	if device == nil && err == mongo.ErrNoDocuments {
 		fmt.Println("device was not found")
 		w.WriteHeader(http.StatusNotFound)
@@ -53,11 +53,11 @@ func (he *HandlersEnvironment) GetDeviceHandler(w http.ResponseWriter, r *http.R
 	he.writeObject(w, device)
 }
 
-func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *http.Request) {
+func (he *HandlersEnv) GetPaginatedDevices(w http.ResponseWriter, r *http.Request) {
 	limit := r.Context().Value("limit").(int)
 	page := r.Context().Value("page").(int)
 
-	devices, err := he.controller.GetPaginatedDevices(limit, page, r.Context())
+	devices, err := he.controller.GetPaginatedDevices(r.Context(), limit, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -67,15 +67,15 @@ func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *htt
 
 }
 
-func (he *HandlersEnvironment) StartTickerService(w http.ResponseWriter, r *http.Request) {
-	err := he.controller.StartTickerService(r.Context())
+func (he *HandlersEnv) StartTickerService(w http.ResponseWriter, r *http.Request) {
+	err := he.controller.StartMeasurementService(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (he *HandlersEnvironment) writeObject(w http.ResponseWriter, object interface{}) {
+func (he *HandlersEnv) writeObject(w http.ResponseWriter, object interface{}) {
 	respBody, err := json.Marshal(object)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -13,25 +13,25 @@ type DevicePayload struct {
 }
 
 type Service struct {
-	Dao       DeviceDao
+	Dao       DevicesDao
 	validator *validator.Validate
 }
 
-func NewService(dao DeviceDao) *Service {
+func NewService(dao DevicesDao) *Service {
 	return &Service{
 		Dao:       dao,
 		validator: validator.New(),
 	}
 }
 
-func (s *Service) AddDevice(payload *DevicePayload, ctx context.Context) (*Device, error) {
+func (s *Service) AddDevice(ctx context.Context, payload *DevicePayload) (*Device, error) {
 	if payload.Interval == 0 {
 		payload.Interval = 1000
 	}
 	if err := s.validateDevicePayload(payload); err != nil {
 		return nil, err
 	}
-	id, err := s.Dao.AddDevice(payload, ctx)
+	id, err := s.Dao.AddDevice(ctx, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -44,16 +44,16 @@ func (s *Service) AddDevice(payload *DevicePayload, ctx context.Context) (*Devic
 	}, nil
 }
 
-func (s *Service) GetDevice(id string, ctx context.Context) (*Device, error) {
+func (s *Service) GetDevice(ctx context.Context, id string) (*Device, error) {
 	objectID, err := stringIDToObjectID(id)
 	if err != nil {
 		return nil, ErrValidation("")
 	}
-	return s.Dao.GetDevice(objectID, ctx)
+	return s.Dao.GetDevice(ctx, objectID)
 }
 
-func (s *Service) GetPaginatedDevices(limit, page int, ctx context.Context) ([]Device, error) {
-	return s.Dao.GetPaginatedDevices(limit, page, ctx)
+func (s *Service) GetPaginatedDevices(ctx context.Context, limit, page int) ([]Device, error) {
+	return s.Dao.GetPaginatedDevices(ctx, limit, page)
 }
 
 func (s *Service) GetAllDevices(ctx context.Context) ([]Device, error) {

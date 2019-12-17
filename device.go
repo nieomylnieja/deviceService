@@ -17,7 +17,9 @@ type Measurement struct {
 	Value float64
 }
 
-func (d *Device) deviceTicker(publish chan<- Measurement, stop <-chan bool) {
+func (d *Device) DeviceTicker(p Publisher, stop <-chan bool) {
+	routingKey := d.Id.Hex()
+
 	ticker := time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
 
 	for {
@@ -26,10 +28,11 @@ func (d *Device) deviceTicker(publish chan<- Measurement, stop <-chan bool) {
 			ticker.Stop()
 			return
 		case <-ticker.C:
-			publish <- Measurement{
-				Id:    d.Id,
-				Value: d.Value,
-			}
+			p.PublishMeasurement(
+				Measurement{
+					Id:    d.Id,
+					Value: d.Value,
+				}, routingKey)
 		}
 	}
 }

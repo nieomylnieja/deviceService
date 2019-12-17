@@ -1,50 +1,57 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/influxdata/influxdb1-client/v2"
+	"github.com/streadway/amqp"
 	"log"
+	"os"
 	"time"
 )
+
+type Consumer interface {
+	RegisterConsumer() <-chan amqp.Delivery
+}
 
 type MeasurementsWriterService struct {
 	db           string
 	writerClient client.Client
 }
 
-func NewMeasurementsWriterService(dbAddress, dbName string) *MeasurementsWriterService {
+func NewWriterService() *MeasurementsWriterService {
+	dbAddress := os.Getenv("INFLUXDB_URL")
+	dbName := os.Getenv("INFLUXDB_NAME")
 	clt, err := client.NewHTTPClient(client.HTTPConfig{
 		Addr: dbAddress,
 	})
-	if err != nil {
-		log.Panicf("could not initialize influx connection: %s", err.Error())
-	}
+	panicOnError(err, "could not initialize influx connection")
 	return &MeasurementsWriterService{
 		db:           dbName,
 		writerClient: clt,
 	}
 }
 
-func (mws *MeasurementsWriterService) Start(publish <-chan Measurement) error {
-	defer mws.closeClient()
+func (mws *MeasurementsWriterService) Start(c Consumer) {
+	measureChan := c.RegisterConsumer()
 
 	batchPoints, err := mws.batchPointsModel()
-	if err != nil {
-		return err
-	}
+	panicOnError(err, "couldn't create batch points model")
 
+	var measurement Measurement
 	go func() {
-		for measurement := range publish {
+		for msg := range measureChan {
+			err = json.Unmarshal(msg.Body, &measurement)
+			panicOnError(err, fmt.Sprintf("failed to unmarshall msg: %s", msg.MessageId))
 			mws.dbWrite(batchPoints, measurement)
 		}
 	}()
-
-	return nil
 }
 
 func (mws *MeasurementsWriterService) dbWrite(batchPoints client.BatchPoints, measurement Measurement) {
 	point, err := client.NewPoint(
 		"deviceValues",
-		map[string]string{"deviceId": measurement.Id.String()},
+		map[string]string{"deviceId": measurement.Id.Hex()},
 		map[string]interface{}{"value": measurement.Value},
 		time.Now())
 	if err != nil {

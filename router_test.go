@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
-	r := newRouter(&Controller{mainService: NewService(&mockDao{})})
+func TestNewRouter_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
+	r := NewRouter(&Controller{mainService: NewService(&mockDao{})})
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Get(mockServer.URL + "/dcisve")
@@ -18,8 +18,8 @@ func Test_GivenNonExistingRoute_RouterReturns404(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
-func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
-	r := newRouter(&Controller{mainService: NewService(&mockDao{})})
+func TestNewRouter_GivenInvalidMethod_RouterReturns405(t *testing.T) {
+	r := NewRouter(&Controller{mainService: NewService(&mockDao{})})
 	mockServer := httptest.NewServer(r)
 
 	resp, err := http.Post(mockServer.URL+"/devices/2", "", nil)
@@ -28,8 +28,8 @@ func Test_GivenInvalidMethod_RouterReturns405(t *testing.T) {
 	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 }
 
-func Test_GivenDaoError_RouterReturns500(t *testing.T) {
-	r := newRouter(&Controller{mainService: NewService(&mockDao{returnErr: ErrDao("")})})
+func TestNewRouter_GivenDaoError_RouterReturns500(t *testing.T) {
+	r := NewRouter(&Controller{mainService: NewService(&mockDao{returnErr: ErrDao("")})})
 	mockServer := httptest.NewServer(r)
 
 	requestBody := bytes.NewBuffer([]byte(`{"name": "test"}`))

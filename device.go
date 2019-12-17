@@ -18,7 +18,7 @@ type Measurement struct {
 }
 
 func (d *Device) DeviceTicker(p Publisher, stop <-chan bool) {
-	routingKey := d.Id.String()
+	routingKey := d.Id.Hex()
 
 	ticker := time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
 

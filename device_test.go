@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func Test_DeviceTicker_ChannelReturnsCorrectMeasurement(t *testing.T) {
+func TestDevice_DeviceTicker_ChannelReturnsCorrectMeasurement(t *testing.T) {
 	mockProducer := &MockAMQPService{}
 	mockProducer.Start()
 	stop := make(chan bool)
@@ -17,7 +17,7 @@ func Test_DeviceTicker_ChannelReturnsCorrectMeasurement(t *testing.T) {
 		body: Measurement{
 			Id:    id,
 			Value: 24.34,
-		}, routingKey: id.String(),
+		}, routingKey: id.Hex(),
 	}
 
 	d := Device{Id: expected.body.Id, Value: expected.body.Value, Interval: 1}

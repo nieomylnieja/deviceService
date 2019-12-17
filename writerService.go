@@ -33,7 +33,6 @@ func NewWriterService() *MeasurementsWriterService {
 }
 
 func (mws *MeasurementsWriterService) Start(c Consumer) {
-	defer mws.closeClient()
 	measureChan := c.RegisterConsumer()
 
 	batchPoints, err := mws.batchPointsModel()
@@ -52,7 +51,7 @@ func (mws *MeasurementsWriterService) Start(c Consumer) {
 func (mws *MeasurementsWriterService) dbWrite(batchPoints client.BatchPoints, measurement Measurement) {
 	point, err := client.NewPoint(
 		"deviceValues",
-		map[string]string{"deviceId": measurement.Id.String()},
+		map[string]string{"deviceId": measurement.Id.Hex()},
 		map[string]interface{}{"value": measurement.Value},
 		time.Now())
 	if err != nil {

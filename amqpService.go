@@ -63,7 +63,7 @@ func (m *MeasurementsAMQP) PublishMeasurement(measurement Measurement, routingKe
 
 func (m *MeasurementsAMQP) connect(url string) {
 	if url == "" {
-		log.Panicln("url must not be empty")
+		log.Panicln("error connecting to AMQP server: url must not be empty")
 	}
 	conn, err := amqp.Dial(url)
 	panicOnError(err, fmt.Sprintf("couldn't connect to rabbitMQ server: %s", url))

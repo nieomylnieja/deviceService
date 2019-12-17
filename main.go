@@ -12,7 +12,7 @@ func main() {
 		NewWriterService(),
 		NewTickerService())
 
-	r := newRouter(c)
+	r := NewRouter(c)
 
 	log.Fatal(http.ListenAndServe(":8000", r))
 }

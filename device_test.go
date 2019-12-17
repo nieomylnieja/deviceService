@@ -1,16 +1,25 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
 )
 
+type MockAMQPService struct {
+}
+
+func (mA *MockAMQPService) Start() {
+	return
+}
+
+func (mA *MockAMQPService) PublishMeasurement(measurement Measurement, routingKey string) {
+	return
+}
+
 func Test_DeviceTicker_ChannelReturnsCorrectMeasurement(t *testing.T) {
-	publish := make(chan Measurement)
+	mockProducer := &MockAMQPService{}
 	stop := make(chan bool)
 	id := primitive.NewObjectID()
-	defer close(publish)
 	defer close(stop)
 
 	expected := Measurement{
@@ -20,9 +29,6 @@ func Test_DeviceTicker_ChannelReturnsCorrectMeasurement(t *testing.T) {
 
 	d := Device{Id: expected.Id, Value: expected.Value, Interval: 1}
 
-	go d.deviceTicker(publish, stop)
-	result := <-publish
+	go d.deviceTicker(mockProducer, stop)
 	stop <- true
-
-	assert.Equal(t, expected, result)
 }

@@ -68,7 +68,7 @@ func (he *HandlersEnvironment) GetPaginatedDevices(w http.ResponseWriter, r *htt
 }
 
 func (he *HandlersEnvironment) StartTickerService(w http.ResponseWriter, r *http.Request) {
-	err := he.controller.StartTickerService(r.Context())
+	err := he.controller.StartMeasurementService(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

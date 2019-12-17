@@ -1,14 +1,17 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/influxdata/influxdb1-client/v2"
+	"github.com/streadway/amqp"
 	"log"
 	"os"
 	"time"
 )
 
-type WriterService interface {
-	Start(publish <-chan Measurement) error
+type Consumer interface {
+	RegisterConsumer() <-chan amqp.Delivery
 }
 
 type MeasurementsWriterService struct {
@@ -29,21 +32,21 @@ func NewWriterService() *MeasurementsWriterService {
 	}
 }
 
-func (mws *MeasurementsWriterService) Start(publish <-chan Measurement) error {
+func (mws *MeasurementsWriterService) Start(c Consumer) {
 	defer mws.closeClient()
+	measureChan := c.RegisterConsumer()
 
 	batchPoints, err := mws.batchPointsModel()
-	if err != nil {
-		return err
-	}
+	panicOnError(err, "couldn't create batch points model")
 
+	var measurement Measurement
 	go func() {
-		for measurement := range publish {
+		for msg := range measureChan {
+			err = json.Unmarshal(msg.Body, &measurement)
+			panicOnError(err, fmt.Sprintf("failed to unmarshall msg: %s", msg.MessageId))
 			mws.dbWrite(batchPoints, measurement)
 		}
 	}()
-
-	return nil
 }
 
 func (mws *MeasurementsWriterService) dbWrite(batchPoints client.BatchPoints, measurement Measurement) {

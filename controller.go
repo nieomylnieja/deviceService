@@ -5,29 +5,54 @@ import (
 	"sync"
 )
 
+type MainService interface {
+	AddDevice(ctx context.Context, payload *DevicePayload) (*Device, error)
+	GetDevice(ctx context.Context, id string) (*Device, error)
+	GetPaginatedDevices(ctx context.Context, limit, page int) ([]Device, error)
+	GetAllDevices(ctx context.Context) ([]Device, error)
+}
+
+type TickerService interface {
+	Start(allDevices []Device, publisher Publisher)
+}
+
+type WriterService interface {
+	Start(consumer Consumer)
+}
+
+type AMQPService interface {
+	Start()
+	Publisher
+	Consumer
+}
+
 type Controller struct {
-	mainService   *Service
+	mainService   MainService
+	amqpService   AMQPService
 	tickerService TickerService
 	writerService WriterService
-	relayService  AMQPService
 	startOnce     sync.Once
 }
 
-func NewController(mainService *Service, writerService WriterService,
-	tickerService TickerService, relayService AMQPService) *Controller {
+func NewController(
+	mainService MainService,
+	amqpService AMQPService,
+	writerService WriterService,
+	tickerService TickerService) *Controller {
+
 	return &Controller{
 		mainService:   mainService,
+		amqpService:   amqpService,
 		writerService: writerService,
 		tickerService: tickerService,
-		relayService:  relayService,
 		startOnce:     sync.Once{},
 	}
 }
 
-func (c *Controller) StartTickerService(ctx context.Context) error {
+func (c *Controller) StartMeasurementService(ctx context.Context) error {
 	var err error
 	c.startOnce.Do(func() {
-		err = c.startTickerService(ctx)
+		err = c.startMeasurementServices(ctx)
 		if err != nil {
 			return
 		}
@@ -35,15 +60,15 @@ func (c *Controller) StartTickerService(ctx context.Context) error {
 	return err
 }
 
-func (c *Controller) startTickerService(ctx context.Context) error {
+func (c *Controller) startMeasurementServices(ctx context.Context) error {
 	devices, err := c.mainService.GetAllDevices(ctx)
 	if err != nil {
 		return err
 	}
 
-	publish := make(chan Measurement)
-	c.tickerService.Start(devices, publish)
-	err = c.writerService.Start(publish)
+	c.amqpService.Start()
+	c.tickerService.Start(devices, c.amqpService)
+	c.writerService.Start(c.amqpService)
 
 	return err
 }

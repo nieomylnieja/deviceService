@@ -38,7 +38,7 @@ func TestController_StartTickerService_GivenDaoError_ControllerReturnsError(t *t
 	out := NewService(&mockDao{returnErr: ErrDao("")})
 	c := Controller{mainService: out}
 
-	err := c.StartTickerService(context.TODO())
+	err := c.StartMeasurementService(context.TODO())
 
 	assert.Equal(t, ErrDao(""), err)
 }

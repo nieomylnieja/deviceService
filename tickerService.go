@@ -1,7 +1,7 @@
 package main
 
-type TickerService interface {
-	Start(allDevices []Device, publish chan<- Measurement)
+type Publisher interface {
+	PublishMeasurement(measurement Measurement, routingKey string)
 }
 
 type DevicesTicker struct {
@@ -12,8 +12,8 @@ func NewTickerService() *DevicesTicker {
 	return &DevicesTicker{stopDevices: make(chan bool)}
 }
 
-func (t *DevicesTicker) Start(allDevices []Device, publish chan<- Measurement) {
+func (t *DevicesTicker) Start(allDevices []Device, publisher Publisher) {
 	for i := range allDevices {
-		go allDevices[i].deviceTicker(publish, t.stopDevices)
+		go allDevices[i].deviceTicker(publisher, t.stopDevices)
 	}
 }

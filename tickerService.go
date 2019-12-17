@@ -14,6 +14,6 @@ func NewTickerService() *DevicesTicker {
 
 func (t *DevicesTicker) Start(allDevices []Device, publisher Publisher) {
 	for i := range allDevices {
-		go allDevices[i].deviceTicker(publisher, t.stopDevices)
+		go allDevices[i].DeviceTicker(publisher, t.stopDevices)
 	}
 }

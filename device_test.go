@@ -1,34 +1,30 @@
 package main
 
 import (
+	"github.com/go-playground/assert/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"testing"
 )
 
-type MockAMQPService struct {
-}
-
-func (mA *MockAMQPService) Start() {
-	return
-}
-
-func (mA *MockAMQPService) PublishMeasurement(measurement Measurement, routingKey string) {
-	return
-}
-
 func Test_DeviceTicker_ChannelReturnsCorrectMeasurement(t *testing.T) {
 	mockProducer := &MockAMQPService{}
+	mockProducer.Start()
 	stop := make(chan bool)
 	id := primitive.NewObjectID()
 	defer close(stop)
 
-	expected := Measurement{
-		Id:    id,
-		Value: 24.34,
+	expected := MockAMQPMessage{
+		body: Measurement{
+			Id:    id,
+			Value: 24.34,
+		}, routingKey: id.String(),
 	}
 
-	d := Device{Id: expected.Id, Value: expected.Value, Interval: 1}
+	d := Device{Id: expected.body.Id, Value: expected.body.Value, Interval: 1}
 
-	go d.deviceTicker(mockProducer, stop)
+	go d.DeviceTicker(mockProducer, stop)
+	response := <-mockProducer.testChan
 	stop <- true
+	close(mockProducer.testChan)
+	assert.Equal(t, expected, response)
 }

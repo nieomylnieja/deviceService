@@ -5,6 +5,23 @@ import (
 	"testing"
 )
 
+type MockAMQPMessage struct {
+	body       Measurement
+	routingKey string
+}
+
+type MockAMQPService struct {
+	testChan chan MockAMQPMessage
+}
+
+func (mA *MockAMQPService) Start() {
+	mA.testChan = make(chan MockAMQPMessage)
+}
+
+func (mA *MockAMQPService) PublishMeasurement(measurement Measurement, routingKey string) {
+	mA.testChan <- MockAMQPMessage{measurement, routingKey}
+}
+
 func TestTickerService_Start_StopChannelWorksProperly(t *testing.T) {
 	ts := NewTickerService()
 	mockProducer := &MockAMQPService{}

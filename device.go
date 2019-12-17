@@ -17,7 +17,7 @@ type Measurement struct {
 	Value float64
 }
 
-func (d *Device) deviceTicker(p Publisher, stop <-chan bool) {
+func (d *Device) DeviceTicker(p Publisher, stop <-chan bool) {
 	routingKey := d.Id.String()
 
 	ticker := time.NewTicker(time.Duration(d.Interval) * time.Millisecond)
